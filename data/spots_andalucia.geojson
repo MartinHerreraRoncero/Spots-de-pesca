@@ -1,0 +1,1284 @@
+{
+  "type": "FeatureCollection",
+  "name": "Spots_Pesca_Andalucia_Granular",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_ayamonte_isla_canela",
+        "name": "Ayamonte - Isla Canela y Desembocadura Guadiana",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Ayamonte",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 9,
+        "target_species": "Corvina, Dorada, Lubina, Robalo, Lenguado",
+        "recommended_techniques": "Surfcasting, Spinning pesado, Pesca a fondo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.389,
+          37.178
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_isla_cristina_caiman",
+        "name": "Isla Cristina - Punta del Caimán y Barra de Ría",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Isla Cristina",
+        "spot_type": "Ría / Estuario",
+        "bottom_type": "Fango / Mixto",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 7,
+        "target_species": "Dorada, Baila, Lubina, Choco, Herrera",
+        "recommended_techniques": "Surfcasting, Spinning ligero, Pesca a corcho"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.332,
+          37.198
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_isla_cristina_central",
+        "name": "Isla Cristina - Playa Central y La Gaviota",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Isla Cristina",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 5,
+        "target_species": "Herrera, Dorada, Lenguado, Raya, Baila",
+        "recommended_techniques": "Surfcasting de media distancia, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.305,
+          37.192
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_redondela_hoyo",
+        "name": "La Redondela / Islantilla - Playa del Hoyo",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Lepe / Isla Cristina",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Caminata media",
+        "depth_m": 6,
+        "target_species": "Dorada, Herrera, Lubina, Sargo",
+        "recommended_techniques": "Surfcasting, Spinning nocturno"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.258,
+          37.197
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_el_terron_flecha",
+        "name": "El Terrón / Cartaya - Flecha de El Rompido",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Cartaya",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Embarcación / Kayak",
+        "depth_m": 8,
+        "target_species": "Dorada XXL, Corvina, Lubina, Lenguado, Sargo",
+        "recommended_techniques": "Surfcasting pesado, Spinning, Kayak fishing"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.142,
+          37.206
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_el_portil_culata",
+        "name": "El Portil - Caño de la Culata",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Punta Umbría",
+        "spot_type": "Ría / Estuario",
+        "bottom_type": "Fango / Mixto",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 5,
+        "target_species": "Lubina, Baila, Sepia, Dorada, Anguila",
+        "recommended_techniques": "Spinning ligero, Eging, Pesca a fondo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.052,
+          37.214
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_punta_umbria_canaleta",
+        "name": "Punta Umbría - Playa de la Canaleta",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Punta Umbría",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 7,
+        "target_species": "Dorada, Corvina, Baila, Herrera, Lubina",
+        "recommended_techniques": "Surfcasting, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.966,
+          37.176
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_punta_umbria_espigon",
+        "name": "Punta Umbría - Espigón Exterior",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Punta Umbría",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Caminata media",
+        "depth_m": 13,
+        "target_species": "Corvina gigante, Robalo, Sargo real, Dentón, Dorada",
+        "recommended_techniques": "Spinning pesado, Surfcasting, Rockfishing"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.942,
+          37.161
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_mazagon_maneli",
+        "name": "Mazagón - Cuesta Maneli y Acantilado Asperillo",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Moguer / Almonte",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Caminata media",
+        "depth_m": 7,
+        "target_species": "Dorada, Herrera, Corvina, Pargo, Sargo picudo",
+        "recommended_techniques": "Surfcasting de competición, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.745,
+          37.078
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "huelva_matalascanas_torre",
+        "name": "Matalascañas - Torre de la Higuera y Límite Doñana",
+        "province": "Huelva",
+        "zone": "Atlántico",
+        "subzone": "Costa de Huelva",
+        "municipality": "Almonte",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 6,
+        "target_species": "Dorada, Lubina, Herrera, Corvina, Lenguado",
+        "recommended_techniques": "Surfcasting, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.535,
+          36.995
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_sanlucar_bajoguia",
+        "name": "Sanlúcar - Bajo de Guía y Desembocadura Guadalquivir",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Sanlúcar de Barrameda",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Fango / Mixto",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 10,
+        "target_species": "Corvina, Robalo / Lubina, Baila, Dorada, Sargo",
+        "recommended_techniques": "Spinning, Surfcasting, Embarcación fondeada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.362,
+          36.786
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_sanlucar_jara",
+        "name": "Sanlúcar - Playa de la Jara",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Sanlúcar de Barrameda",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 6,
+        "target_species": "Sargo, Lubina, Dorada, Lenguado",
+        "recommended_techniques": "Surfcasting, Rockfishing, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.388,
+          36.761
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_chipiona_corrales",
+        "name": "Chipiona - Faro, Playa de Regla y Corrales",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Chipiona",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 5,
+        "target_species": "Sargo real, Lubina, Dorada, Pulpo, Baila",
+        "recommended_techniques": "Rockfishing, Spinning, Pesca al tiento"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.442,
+          36.745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_rota_costilla",
+        "name": "Rota - Espigón del Muelle y Playa de la Costilla",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Rota",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 8,
+        "target_species": "Dorada, Herrera, Sargo, Baila, Calamar",
+        "recommended_techniques": "Surfcasting, Eging, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.358,
+          36.618
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_elpuerto_valdelagrana",
+        "name": "El Puerto de Santa María - Espigón de Valdelagrana",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "El Puerto de Santa María",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Fango / Mixto",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 7,
+        "target_species": "Baila, Lubina, Dorada, Choco, Corvina",
+        "recommended_techniques": "Spinning ligero, Surfcasting, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.225,
+          36.578
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_elpuerto_torunos",
+        "name": "El Puerto / Puerto Real - Playa de Levante y Los Toruños",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "El Puerto de Santa María",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Caminata media",
+        "depth_m": 5,
+        "target_species": "Dorada, Herrera, Lenguado, Lubina, Raya",
+        "recommended_techniques": "Surfcasting, Pesca a fondo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.212,
+          36.545
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_capital_caleta",
+        "name": "Cádiz Capital - La Caleta y Arrecife San Sebastián",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Cádiz",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 7,
+        "target_species": "Sargo, Dorada, Mojarra, Lubina, Dentón",
+        "recommended_techniques": "Rockfishing, Spinning en espuma, Tiento"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.309,
+          36.531
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_capital_cortadura",
+        "name": "Cádiz Capital - Cortadura y Torregorda",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Cádiz",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 7,
+        "target_species": "Dorada, Herrera, Sargo, Robalo, Corvina",
+        "recommended_techniques": "Surfcasting de competición, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.268,
+          36.482
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_sancti_petri",
+        "name": "Sancti Petri - Caño y Castillo (Chiclana)",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Chiclana de la Frontera",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 9,
+        "target_species": "Dorada XXL, Lubina, Corvina, Herrera, Lenguado",
+        "recommended_techniques": "Surfcasting, Spinning, Kayak fishing"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.216,
+          36.381
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_conil_roche",
+        "name": "Conil - Cabo Roche y Calas de Poniente",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Conil de la Frontera",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Caminata media",
+        "depth_m": 14,
+        "target_species": "Sargo picudo, Dentón, Lubina, Pargo, Baila",
+        "recommended_techniques": "Rockfishing, Spinning en rompiente, Jigging costero"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.14,
+          36.301
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_barbate_trafalgar",
+        "name": "Barbate - Faro de Trafalgar y Los Cabezos",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Barbate",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Caminata media",
+        "depth_m": 16,
+        "target_species": "Dentón, Pargo, Corvina, Lubina, Serviola",
+        "recommended_techniques": "Spinning pesado, Jigging, Surfcasting extremo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.033,
+          36.183
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_zahara_atlanterra",
+        "name": "Zahara de los Atunes - Cabo de Gracia y Atlanterra",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Tarifa / Barbate",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 12,
+        "target_species": "Sargo breado, Dentón, Dorada, Baila, Calamar",
+        "recommended_techniques": "Surfcasting, Spinning, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.815,
+          36.115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_tarifa_bolonia",
+        "name": "Tarifa - Playa de Bolonia y Duna Monumental",
+        "province": "Cádiz",
+        "zone": "Atlántico",
+        "subzone": "Bahía y Costa de Cádiz",
+        "municipality": "Tarifa",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 10,
+        "target_species": "Dorada, Sargo breado, Dentón, Baila, Herrera",
+        "recommended_techniques": "Surfcasting, Spinning costero"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.772,
+          36.088
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_tarifa_palomas",
+        "name": "Tarifa - Punta de Tarifa / Isla de las Palomas",
+        "province": "Cádiz",
+        "zone": "Estrecho",
+        "subzone": "Estrecho de Gibraltar",
+        "municipality": "Tarifa",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 22,
+        "target_species": "Dentón, Mero, Atún rojo, Serviola, Sargo breado",
+        "recommended_techniques": "Shore Jigging, Spinning pesado, Rockfishing extremo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.608,
+          36.002
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_algeciras_carnero",
+        "name": "Algeciras - Punta Carnero y Cala Arenas",
+        "province": "Cádiz",
+        "zone": "Estrecho",
+        "subzone": "Estrecho de Gibraltar",
+        "municipality": "Algeciras",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Acceso técnico / Escarpado",
+        "depth_m": 18,
+        "target_species": "Dentón, Sargo real, Mero, Palometón, Pargo",
+        "recommended_techniques": "Rockfishing, Shore Jigging, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.428,
+          36.076
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cadiz_lalinea_alcaidesa",
+        "name": "La Línea - Playa de la Alcaidesa y Punta Mala",
+        "province": "Cádiz",
+        "zone": "Estrecho",
+        "subzone": "Estrecho de Gibraltar",
+        "municipality": "La Línea de la Concepción",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 10,
+        "target_species": "Herrera, Dorada, Dentón, Sargo, Jurel",
+        "recommended_techniques": "Surfcasting, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.321,
+          36.235
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_manilva_chullera",
+        "name": "Manilva - Punta Chullera y Roquedos",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Manilva",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 10,
+        "target_species": "Sargo, Dorada, Dentón, Pulpo, Calamar",
+        "recommended_techniques": "Rockfishing, Eging, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.248,
+          36.312
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_estepona_doncella",
+        "name": "Estepona - Punta Doncella y Roqueríos del Puerto",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Estepona",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 11,
+        "target_species": "Dorada, Herrera, Dentón, Sargo, Calamar",
+        "recommended_techniques": "Surfcasting nocturno, Eging, Rockfishing"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.158,
+          36.415
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_estepona_padron",
+        "name": "Estepona - Desembocadura Río Padrón",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Estepona",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 7,
+        "target_species": "Lubina, Herrera, Dorada, Baila, Mabre",
+        "recommended_techniques": "Spinning, Surfcasting"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.112,
+          36.438
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_marbella_puertobanus",
+        "name": "Marbella - Puerto Banús y Río Verde",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Marbella",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 9,
+        "target_species": "Lubina, Palometón, Dorada, Calamar, Jurel",
+        "recommended_techniques": "Spinning medio, Eging, Surfcasting"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.952,
+          36.488
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_marbella_cabopino",
+        "name": "Marbella - Dunas y Playa de Cabopino",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Marbella",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 8,
+        "target_species": "Herrera, Dorada, Mabres, Rascacio, Lubina",
+        "recommended_techniques": "Surfcasting de competición, Spinning ligero"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.743,
+          36.483
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_mijas_calaburras",
+        "name": "Mijas Costa - Faro de Calaburras y Roquedo",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Mijas",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Caminata media",
+        "depth_m": 12,
+        "target_species": "Sargo breado, Dentón, Oblada, Pulpo, Serviola",
+        "recommended_techniques": "Rockfishing, Spinning, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.638,
+          36.508
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_fuengirola_castillo",
+        "name": "Fuengirola - Castillo Sohail y Espigón Puerto",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Fuengirola",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 10,
+        "target_species": "Calamar, Sepia, Lubina, Jurel, Palometón",
+        "recommended_techniques": "Eging, Spinning medio, Rockfishing"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.619,
+          36.536
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_benalmadena_bonita",
+        "name": "Benalmádena - Punta Negra y Playa Bonita",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Occidental",
+        "municipality": "Benalmádena",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 11,
+        "target_species": "Sargo, Dorada, Dentón, Calamar",
+        "recommended_techniques": "Rockfishing, Surfcasting nocturno, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.552,
+          36.578
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_capital_guadalhorce",
+        "name": "Málaga Capital - Desembocadura del Guadalhorce",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Oriental / Axarquía",
+        "municipality": "Málaga",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Arena fina",
+        "accessibility": "Caminata media",
+        "depth_m": 8,
+        "target_species": "Anjova, Palometón, Lubina, Dorada, Baila",
+        "recommended_techniques": "Spinning pesado con señuelos de superficie, Surfcasting"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.452,
+          36.665
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_capital_elpalo",
+        "name": "Málaga Capital - El Palo, El Candado y Peñón del Cuervo",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Oriental / Axarquía",
+        "municipality": "Málaga",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 9,
+        "target_species": "Sargo, Dorada, Herrera, Baila, Pulpo",
+        "recommended_techniques": "Surfcasting, Rockfishing, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.347,
+          36.716
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_rincon_cantal",
+        "name": "Rincón de la Victoria - Acantilados del Cantal",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Oriental / Axarquía",
+        "municipality": "Rincón de la Victoria",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 12,
+        "target_species": "Sargo, Dorada, Dentón, Sepia, Jurel",
+        "recommended_techniques": "Rockfishing, Eging, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.288,
+          36.712
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "malaga_nerja_maro",
+        "name": "Nerja / Maro - Acantilados de Maro y Cala Cantarriján",
+        "province": "Málaga",
+        "zone": "Mediterráneo",
+        "subzone": "Costa del Sol Oriental / Axarquía",
+        "municipality": "Nerja",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Acceso técnico / Escarpado",
+        "depth_m": 25,
+        "target_species": "Dentón, Mero, Oblada, Sargo, Serviola",
+        "recommended_techniques": "Shore Jigging, Rockfishing de profundidad, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.834,
+          36.753
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "granada_herradura_mona",
+        "name": "La Herradura - Punta de la Mona",
+        "province": "Granada",
+        "zone": "Mediterráneo",
+        "subzone": "Costa Tropical de Granada",
+        "municipality": "Almuñécar",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Acceso técnico / Escarpado",
+        "depth_m": 30,
+        "target_species": "Dentón, Serviola, Pargo, Sargo breado, Calamar",
+        "recommended_techniques": "Shore Jigging, Rockfishing pesado, Eging profundo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.725,
+          36.728
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "granada_almunecar_penones",
+        "name": "Almuñécar - Peñones de San Cristóbal y Puerta del Mar",
+        "province": "Granada",
+        "zone": "Mediterráneo",
+        "subzone": "Costa Tropical de Granada",
+        "municipality": "Almuñécar",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 15,
+        "target_species": "Dorada, Sargo, Dentón, Calamar, Herrera",
+        "recommended_techniques": "Surfcasting pesado, Eging, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.692,
+          36.732
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "granada_almunecar_cotobro",
+        "name": "Almuñécar - Playa de Cotobro",
+        "province": "Granada",
+        "zone": "Mediterráneo",
+        "subzone": "Costa Tropical de Granada",
+        "municipality": "Almuñécar",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 12,
+        "target_species": "Herrera, Dorada, Sargo, Sepia",
+        "recommended_techniques": "Surfcasting, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.708,
+          36.731
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "granada_salobrena_penon",
+        "name": "Salobreña - El Peñón y Desembocadura Guadalfeo",
+        "province": "Granada",
+        "zone": "Mediterráneo",
+        "subzone": "Costa Tropical de Granada",
+        "municipality": "Salobreña",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 11,
+        "target_species": "Lubina, Anjova, Palometón, Dorada, Sargo",
+        "recommended_techniques": "Spinning, Surfcasting"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.595,
+          36.741
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "granada_motril_poniente",
+        "name": "Motril - Playa de Poniente y Azucarera",
+        "province": "Granada",
+        "zone": "Mediterráneo",
+        "subzone": "Costa Tropical de Granada",
+        "municipality": "Motril",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 16,
+        "target_species": "Herrera gigante, Dorada, Jurel, Mabre, Dentón",
+        "recommended_techniques": "Surfcasting de fondo, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.528,
+          36.718
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "granada_motril_sacratif",
+        "name": "Motril - Cabo Sacratif y Faro de Torrenueva",
+        "province": "Granada",
+        "zone": "Mediterráneo",
+        "subzone": "Costa Tropical de Granada",
+        "municipality": "Motril",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Caminata media",
+        "depth_m": 22,
+        "target_species": "Dentón, Serviola, Pargo, Sargo real, Calamar",
+        "recommended_techniques": "Shore Jigging, Rockfishing pesado, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.468,
+          36.701
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "granada_calahonda_rijana",
+        "name": "Calahonda / Castell de Ferro - Cantiles y Cala de la Rijana",
+        "province": "Granada",
+        "zone": "Mediterráneo",
+        "subzone": "Costa Tropical de Granada",
+        "municipality": "Gualchos / Calahonda",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Caminata media",
+        "depth_m": 26,
+        "target_species": "Dentón, Pargo, Sargo breado, Mero, Calamar",
+        "recommended_techniques": "Shore Jigging, Rockfishing de profundidad, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.385,
+          36.711
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_adra_juana",
+        "name": "Adra - La Juana y Puerto de Adra",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Costa de Almería / Poniente",
+        "municipality": "Adra",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 14,
+        "target_species": "Dorada, Herrera, Jurel, Sargo, Calamar",
+        "recommended_techniques": "Surfcasting, Eging, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.022,
+          36.745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_almerimar_culoperro",
+        "name": "El Ejido - Playa de Almerimar y Punta Culo de Perro",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Costa de Almería / Poniente",
+        "municipality": "El Ejido",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Arena fina",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 9,
+        "target_species": "Dorada, Herrera, Lubina, Anjova, Palometón",
+        "recommended_techniques": "Surfcasting, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.805,
+          36.692
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_roquetas_entinas",
+        "name": "Roquetas de Mar - Paraje Natural Punta Entinas-Sabinar",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Costa de Almería / Poniente",
+        "municipality": "Roquetas de Mar",
+        "spot_type": "Playa / Arenal",
+        "bottom_type": "Posidonia y arena",
+        "accessibility": "Caminata media",
+        "depth_m": 8,
+        "target_species": "Dorada, Mabre/Herrera, Lubina, Sargo, Anjova",
+        "recommended_techniques": "Surfcasting de larga distancia, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.668,
+          36.685
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_roquetas_castillo",
+        "name": "Roquetas de Mar - Puerto y Castillo de Santa Ana",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Costa de Almería / Poniente",
+        "municipality": "Roquetas de Mar",
+        "spot_type": "Espigón / Estructura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 10,
+        "target_species": "Calamar, Sepia, Sargo, Dorada, Lubina",
+        "recommended_techniques": "Eging, Rockfishing, Spinning"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.608,
+          36.758
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_capital_zapillo",
+        "name": "Almería Capital - El Zapillo y Desembocadura Andarax",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Cabo de Gata y Levante Almeriense",
+        "municipality": "Almería",
+        "spot_type": "Desembocadura",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Fácil / A pie",
+        "depth_m": 9,
+        "target_species": "Anjova, Palometón, Herrera, Dorada, Sargo",
+        "recommended_techniques": "Spinning, Surfcasting"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.448,
+          36.825
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_cabogata_sirenas",
+        "name": "Cabo de Gata - Faro y Arrecife de las Sirenas",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Cabo de Gata y Levante Almeriense",
+        "municipality": "Níjar",
+        "spot_type": "Roquedo / Acantilado",
+        "bottom_type": "Roca laminar / Laja",
+        "accessibility": "Acceso técnico / Escarpado",
+        "depth_m": 22,
+        "target_species": "Dentón, Mero blanco, Sargo real, Serviola, Barracuda",
+        "recommended_techniques": "Spinning en espuma, Shore Jigging, Rockfishing"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.193,
+          36.722
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_sanjose_monsul",
+        "name": "San José - Playa de los Genoveses y Cala Mónsul",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Cabo de Gata y Levante Almeriense",
+        "municipality": "Níjar",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Posidonia y arena",
+        "accessibility": "Caminata media",
+        "depth_m": 12,
+        "target_species": "Dorada, Herrera, Sargo, Dentón, Baila",
+        "recommended_techniques": "Surfcasting, Spinning ligero, Rockfishing"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.148,
+          36.732
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "almeria_carboneras_muertos",
+        "name": "Carboneras / Mojácar - Playa de los Muertos y Playa Macenas",
+        "province": "Almería",
+        "zone": "Mediterráneo",
+        "subzone": "Cabo de Gata y Levante Almeriense",
+        "municipality": "Carboneras / Mojácar",
+        "spot_type": "Cala Mixta",
+        "bottom_type": "Cascajo y grava",
+        "accessibility": "Caminata media",
+        "depth_m": 24,
+        "target_species": "Dorada, Dentón, Herrera, Pargo, Calamar",
+        "recommended_techniques": "Surfcasting pesado, Shore Jigging, Eging"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -1.898,
+          36.953
+        ]
+      }
+    }
+  ]
+}
