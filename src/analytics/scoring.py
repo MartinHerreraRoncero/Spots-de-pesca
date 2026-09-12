@@ -1,7 +1,8 @@
 """
-Heuristic Marine Biology, Solunar, Tides & Multi-Species Scoring Engine for Andalusia.
+Heuristic Marine Biology, Solunar, Tides, Bathymetry, Water Clarity & Multi-Species Scoring Engine for Andalusia.
 Integrates barometric pressure dynamics, tidal hydraulic state, wind-coastline aspect,
-oceanographic buoy bias correction, and species-specific scoring models.
+oceanographic buoy bias correction, submarine bathymetric gradients, satellite turbidity,
+estuarine river runoff, and species-specific scoring models.
 """
 
 from __future__ import annotations
@@ -17,6 +18,9 @@ from src.models.spot import (
     TideState,
     WindRelativeAspect,
     SpeciesScores,
+    BathymetryProfile,
+    WaterClarityConditions,
+    RiverRunoffConditions,
     ScoreBreakdown,
     ScoringWeights,
     MarineBuoy,
@@ -24,6 +28,9 @@ from src.models.spot import (
 )
 from src.analytics.solunar import evaluate_solunar_for_hour
 from src.analytics.tides import compute_spot_tide_state
+from src.analytics.bathymetry import calculate_bathymetry_profile
+from src.analytics.satellite_ocean import compute_water_clarity_and_fronts
+from src.analytics.river_runoff import compute_river_runoff_impact
 
 
 def calculate_wind_relative_aspect(
@@ -37,8 +44,6 @@ def calculate_wind_relative_aspect(
     - coastline_bearing: The direction (0-360°) pointing directly outwards from the coast to sea.
     - wind_direction: The direction the wind is COMING FROM.
     """
-    # Vector of wind moving towards = (wind_direction + 180) % 360
-    # Difference between wind arrival and coastline normal
     diff = (wind_direction - coastline_bearing + 180.0) % 360.0 - 180.0
     abs_diff = abs(diff)
 
@@ -46,7 +51,6 @@ def calculate_wind_relative_aspect(
     is_offshore = (abs_diff >= 130.0)
     is_cross_shore = (not is_onshore and not is_offshore)
 
-    # Upwelling risk in the Mediterranean (Costa del Sol / Tropical) when strong offshore/westerly wind blows
     upwelling_risk = (zone in ["Mediterráneo", "Estrecho"] and is_offshore and wind_speed >= 18.0)
 
     if is_onshore:
@@ -85,13 +89,11 @@ def apply_buoy_bias_correction(
     if not buoys_telemetry:
         return marine.wave_height, False, None
 
-    # Find closest buoy
     closest_buoy = None
     min_dist_km = 9999.0
     closest_obs = None
 
     for b, obs in buoys_telemetry:
-        # Haversine approximation for short distances in Andalusia
         dlat = (spot.latitude - b.latitude) * 111.0
         dlon = (spot.longitude - b.longitude) * 111.0 * math.cos(math.radians(spot.latitude))
         dist_km = math.sqrt(dlat**2 + dlon**2)
@@ -100,10 +102,8 @@ def apply_buoy_bias_correction(
             closest_buoy = b
             closest_obs = obs
 
-    # Apply calibration if within 90km radius
     if closest_buoy and min_dist_km <= 90.0 and closest_obs:
-        # Scale factor between buoy real observation and model
-        weight = max(0.0, 1.0 - (min_dist_km / 90.0)) * 0.45  # Blending weight up to 45%
+        weight = max(0.0, 1.0 - (min_dist_km / 90.0)) * 0.45
         calibrated_h = (1.0 - weight) * marine.wave_height + weight * closest_obs.wave_height_hs
         return round(calibrated_h, 2), True, closest_buoy.name
 
@@ -209,7 +209,6 @@ def calculate_wind_score(weather: WeatherConditions, wind_aspect: WindRelativeAs
         score = 15.0
         tips.append(f"🛑 Vendaval ({w:.1f} km/h): lance imposible.")
 
-    # Aspect modifier
     if wind_aspect.is_onshore and 8.0 <= w <= 20.0:
         score = min(100.0, score + 5.0)
     elif wind_aspect.upwelling_risk:
@@ -229,19 +228,31 @@ def calculate_species_scores(
     wind_aspect: WindRelativeAspect,
     pressure_score: float,
     delta_3h: float,
+    bathymetry: Optional[BathymetryProfile] = None,
+    water_clarity: Optional[WaterClarityConditions] = None,
+    river_runoff: Optional[RiverRunoffConditions] = None,
 ) -> SpeciesScores:
     """
-    Computes calibrated species-specific scores based on precise marine biology criteria.
+    Computes calibrated species-specific scores based on marine biology,
+    bathymetric gradients, water clarity, and river runoff plumes.
     """
     h = marine.wave_height
     p = marine.wave_period
     w = weather.wind_speed_10m
     coef = tide_state.coefficient
-    is_spring = solunar_summary.is_spring_tide
+    c_kts = marine.current_velocity_knots
+
+    # Fallback profiles if not provided
+    if bathymetry is None:
+        bathymetry = calculate_bathymetry_profile(spot)
+    if water_clarity is None:
+        water_clarity = compute_water_clarity_and_fronts(spot, marine, weather)
+    if river_runoff is None:
+        river_runoff = compute_river_runoff_impact(spot, weather)
 
     # 1. DORADA & HERRERA (Surfcasting en Arenales / Canales)
     # Prefers: 0.4-0.9m waves, rising tide (llenante), high tide coefficient, gentle currents (0.25-0.75 kts)
-    c_kts = marine.current_velocity_knots
+    # Bathymetry: Sandbars with breaking steps; Clarity: Turbid/rippled water (not crystal clear shallow midday)
     d_score = 50.0
     if 0.35 <= h <= 0.85:
         d_score += 15.0
@@ -252,36 +263,58 @@ def calculate_species_scores(
     if coef >= 70:
         d_score += 10.0
     if 0.25 <= c_kts <= 0.85:
-        d_score += 10.0  # Gentle current disperses scent trail
+        d_score += 10.0
     elif c_kts > 1.8:
-        d_score -= 15.0  # Excessive current drags weights
+        d_score -= 15.0
     if spot.spot_type in ["Playa / Arenal", "Desembocadura"]:
         d_score += 10.0
     if wind_aspect.is_onshore:
         d_score += 5.0
-    dorada_final = max(10.0, min(100.0, d_score * 0.5 + pressure_score * 0.25 + solunar_score * 0.25))
+    # Bathymetry & Clarity & Runoff impact on Dorada
+    if "Barra de arena" in bathymetry.structure_type or "Plataforma arenosa" in bathymetry.structure_type:
+        d_score += 8.0
+    if water_clarity.clarity_class in ["Agua Rizada / Nutrientes", "Agua Tomada (Chocolate)"]:
+        d_score += 8.0
+    elif water_clarity.clarity_class == "Agua Azul Cristalina" and (spot.depth_m or 5) < 6.0:
+        d_score -= 10.0  # Suspicious doradas avoid crystal clear shallow water
+    if river_runoff.plume_active and river_runoff.salinity_drop_psu <= 10.0:
+        d_score += 6.0
+
+    dorada_final = max(10.0, min(100.0, d_score * 0.45 + pressure_score * 0.25 + solunar_score * 0.30))
 
     # 2. LUBINA & ROBALO (Spinning en Rompiente / Espuma)
     # Prefers: 1.1-1.9m waves with heavy foam, moving current (0.6-1.8 kts), pre-frontal pressure drops
+    # Bathymetry: Tidal channels & shallow reefs; Clarity: Turbid/chocolate water; River runoff: Massive boost!
     l_score = 45.0
     if 1.1 <= h <= 1.8:
         l_score += 25.0
     elif 0.8 <= h < 1.1:
         l_score += 12.0
     elif h < 0.4:
-        l_score -= 20.0  # Clear flat water is bad for daytime seabass
+        l_score -= 20.0
     if 0.6 <= c_kts <= 1.8:
-        l_score += 12.0  # Current stirs up baitfish near points & headlands
+        l_score += 12.0
     if delta_3h <= -0.5:
         l_score += 15.0
     if solunar_score >= 65.0:
         l_score += 10.0
     if spot.spot_type in ["Espigón / Estructura", "Desembocadura", "Ría / Estuario", "Roquedo / Acantilado"]:
         l_score += 10.0
-    lubina_final = max(10.0, min(100.0, l_score * 0.6 + pressure_score * 0.2 + solunar_score * 0.2))
+    # Bathymetry & Clarity & River Runoff impact on Lubina
+    if "Canalizo" in bathymetry.structure_type or "Bajo rocoso" in bathymetry.structure_type:
+        l_score += 12.0
+    if water_clarity.clarity_class in ["Agua Tomada (Chocolate)", "Agua Rizada / Nutrientes"]:
+        l_score += 15.0
+    elif water_clarity.clarity_class == "Agua Azul Cristalina":
+        l_score -= 14.0
+    if river_runoff.plume_active:
+        l_score += 22.0  # Massive feeding response in river mouth plumes
+
+    lubina_final = max(10.0, min(100.0, l_score * 0.50 + pressure_score * 0.25 + solunar_score * 0.25))
 
     # 3. SARGO (Rockfishing en Roquedos y Espuma)
     # Prefers: Breaking waves on rocky ledges (0.8 - 1.5m), moderate current, long wave period
+    # Bathymetry: High rugosity & rock structure; Clarity: Foamy water; River runoff: Avoids severe freshwater
     s_score = 50.0
     if 0.8 <= h <= 1.6:
         s_score += 25.0
@@ -293,58 +326,97 @@ def calculate_species_scores(
         s_score += 10.0
     if spot.spot_type in ["Roquedo / Acantilado", "Cala Mixta", "Espigón / Estructura"]:
         s_score += 15.0
-    sargo_final = max(10.0, min(100.0, s_score * 0.5 + solunar_score * 0.3 + pressure_score * 0.2))
+    # Bathymetry & Clarity & Runoff
+    if bathymetry.rugosity_index >= 0.65 or "Bajo rocoso" in bathymetry.structure_type or "Cantil" in bathymetry.structure_type:
+        s_score += 18.0
+    if water_clarity.clarity_class == "Agua Rizada / Nutrientes":
+        s_score += 12.0
+    if river_runoff.salinity_drop_psu >= 8.0:
+        s_score -= 16.0  # Sargos dislike high freshwater runoff
+
+    sargo_final = max(10.0, min(100.0, s_score * 0.45 + solunar_score * 0.35 + pressure_score * 0.20))
 
     # 4. CALAMAR & SEPIA (Eging en Aguas Claras)
     # Prefers: Calm sea (h < 0.4m), zero/weak current (<0.4 kts), light wind (<10 km/h), high tide
+    # Bathymetry: Mixed bottom with depth > 8m; Clarity: STRICTLY CLEAR; River runoff: Severe penalty
     c_score = 50.0
     if h <= 0.35:
         c_score += 25.0
     elif h <= 0.6:
         c_score += 5.0
     else:
-        c_score -= 30.0  # Rough water ruins squid fishing
+        c_score -= 30.0
     if c_kts <= 0.4:
-        c_score += 15.0  # Low current allows jigs to sink naturally
+        c_score += 15.0
     elif c_kts > 0.8:
-        c_score -= 20.0  # Strong current sweeps jigs away
+        c_score -= 20.0
     if w <= 10.0:
         c_score += 15.0
     elif w > 20.0:
         c_score -= 20.0
     if tide_state.is_slack_water or "Pleamar" in tide_state.state_name:
         c_score += 10.0
-    calamar_final = max(10.0, min(100.0, c_score * 0.55 + solunar_score * 0.3 + pressure_score * 0.15))
+    # Bathymetry & Clarity & Runoff impact on Calamar
+    if (spot.depth_m or 8) >= 8.0 and bathymetry.rugosity_index >= 0.40:
+        c_score += 10.0
+    if water_clarity.clarity_class in ["Agua Azul Cristalina", "Agua Clara Turquesa"]:
+        c_score += 22.0  # Visual predators require clear water
+    elif water_clarity.clarity_class == "Agua Tomada (Chocolate)":
+        c_score -= 32.0  # Cannot hunt with jigs in turbid water
+    if river_runoff.plume_active:
+        c_score -= 28.0  # Cephalopods flee freshwater discharge
+
+    calamar_final = max(10.0, min(100.0, c_score * 0.50 + solunar_score * 0.35 + pressure_score * 0.15))
 
     # 5. DENTÓN & SERVIOLA (Shore Jigging y Pesca Profunda)
     # Prefers: Deep waters (>15m), strong current (0.8-2.2 kts), clean groundswell
+    # Bathymetry: Steep drop-offs & high slopes; Clarity: Thermal fronts & clear water
     dent_score = 45.0
     if (spot.depth_m or 10) >= 15:
         dent_score += 20.0
     if 0.8 <= c_kts <= 2.2:
-        dent_score += 15.0  # Pelagic predators actively hunt in strong currents
+        dent_score += 15.0
     if p >= 7.5:
         dent_score += 10.0
     if 0.5 <= h <= 1.3:
         dent_score += 10.0
     if solunar_score >= 70.0:
         dent_score += 15.0
-    denton_final = max(10.0, min(100.0, dent_score * 0.5 + solunar_score * 0.35 + pressure_score * 0.15))
+    # Bathymetry & Clarity & Runoff impact on Denton
+    if "Cantil" in bathymetry.structure_type or bathymetry.depth_gradient_pct >= 12.0:
+        dent_score += 25.0
+    if water_clarity.thermal_front_detected:
+        dent_score += 16.0  # Hunt pelagics along thermal convergence fronts
+    if water_clarity.clarity_class in ["Agua Azul Cristalina", "Agua Clara Turquesa"]:
+        dent_score += 10.0
+    elif water_clarity.clarity_class == "Agua Tomada (Chocolate)":
+        dent_score -= 15.0
+
+    denton_final = max(10.0, min(100.0, dent_score * 0.45 + solunar_score * 0.35 + pressure_score * 0.20))
 
     # 6. CORVINA (Grandes Corrientes de Marea en Golfo de Cádiz)
     # Prefers: Gulf of Cadiz/Huelva, huge currents (1.0-2.5 kts), spring tides (coef > 80), estuaries
+    # Bathymetry: Tidal channels; Clarity: Turbid water; River runoff: Major river plume loves
     corv_score = 45.0
     if spot.zone == "Atlántico":
         corv_score += 15.0
     if coef >= 80:
         corv_score += 15.0
     if 1.0 <= c_kts <= 2.6:
-        corv_score += 20.0  # Huge corvinas feed aggressively in fast tidal currents
+        corv_score += 20.0
     if spot.spot_type in ["Desembocadura", "Espigón / Estructura", "Playa / Arenal"]:
         corv_score += 10.0
     if 0.5 <= h <= 1.2:
         corv_score += 10.0
-    corvina_final = max(10.0, min(100.0, corv_score * 0.5 + solunar_score * 0.3 + pressure_score * 0.2))
+    # Bathymetry & Clarity & Runoff impact on Corvina
+    if "Canalizo" in bathymetry.structure_type or "Desembocadura" in spot.spot_type:
+        corv_score += 16.0
+    if water_clarity.clarity_class in ["Agua Tomada (Chocolate)", "Agua Rizada / Nutrientes"]:
+        corv_score += 12.0
+    if river_runoff.plume_active:
+        corv_score += 25.0  # Prime corvina feeding stimulus
+
+    corvina_final = max(10.0, min(100.0, corv_score * 0.45 + solunar_score * 0.35 + pressure_score * 0.20))
 
     return SpeciesScores(
         dorada_score=round(dorada_final, 1),
@@ -366,10 +438,13 @@ def score_hourly_conditions(
     delta_6h: float,
     weights: Optional[ScoringWeights] = None,
     buoys_telemetry: Optional[List[Tuple[MarineBuoy, BuoyObservation]]] = None,
+    bathymetry: Optional[BathymetryProfile] = None,
+    water_clarity: Optional[WaterClarityConditions] = None,
+    river_runoff: Optional[RiverRunoffConditions] = None,
 ) -> ScoreBreakdown:
     """
     Core heuristic scoring function: aggregates physics, tides, wind aspect,
-    buoy calibration, and species-specific models into unified ratings.
+    buoy calibration, bathymetric profile, water clarity, river plumes, and species models.
     """
     if weights is None:
         weights = ScoringWeights()
@@ -399,7 +474,15 @@ def score_hourly_conditions(
     # 5. Tides State
     tide_state = compute_spot_tide_state(spot, target_dt, solunar_summary)
 
-    # 6. Global Multi-Species Weighted Sum
+    # 6. Bathymetry, Water Clarity & River Plumes
+    if bathymetry is None:
+        bathymetry = calculate_bathymetry_profile(spot)
+    if water_clarity is None:
+        water_clarity = compute_water_clarity_and_fronts(spot, marine, weather, buoys_telemetry)
+    if river_runoff is None:
+        river_runoff = compute_river_runoff_impact(spot, weather)
+
+    # 7. Global Multi-Species Weighted Sum
     overall = (
         w.weight_pressure * p_score +
         w.weight_solunar * solunar_score +
@@ -407,11 +490,29 @@ def score_hourly_conditions(
         w.weight_wind * wind_score +
         w.weight_moon_phase * lunar_score
     )
+
+    # Topographic & Clarity Global Modifiers
+    if bathymetry.topographic_hotspot_score >= 70.0:
+        overall += 3.0
+    if water_clarity.thermal_front_detected:
+        overall += 4.0
+
     overall = max(0.0, min(100.0, overall))
 
-    # 7. Species-specific scoring models
+    # 8. Species-specific scoring models
     species_scores = calculate_species_scores(
-        spot, weather, marine, solunar_summary, solunar_score, tide_state, wind_aspect, p_score, delta_3h
+        spot=spot,
+        weather=weather,
+        marine=marine,
+        solunar_summary=solunar_summary,
+        solunar_score=solunar_score,
+        tide_state=tide_state,
+        wind_aspect=wind_aspect,
+        pressure_score=p_score,
+        delta_3h=delta_3h,
+        bathymetry=bathymetry,
+        water_clarity=water_clarity,
+        river_runoff=river_runoff,
     )
 
     # Rating classification
@@ -439,6 +540,13 @@ def score_hourly_conditions(
     
     all_tips.append(f"🌊 Marea: {tide_state.state_name} (Coef. {tide_state.coefficient}).")
     all_tips.append(f"🧭 Corriente: {marine.current_velocity_knots} kts ({marine.current_direction:.0f}°) • {marine.current_intensity_level}.")
+    all_tips.append(f"👁️ Claridad: {water_clarity.clarity_class} (Secchi: {water_clarity.secchi_depth_m}m • {water_clarity.turbidity_ntu} NTU).")
+    
+    if bathymetry.topographic_hotspot_score >= 65.0:
+        all_tips.append(f"⛰️ Hotspot Topográfico ({bathymetry.topographic_hotspot_score:.0f}/100): {bathymetry.structure_type}.")
+    if river_runoff.plume_active:
+        all_tips.append(river_runoff.plume_impact_summary)
+
     all_tips.extend(p_tips)
     all_tips.extend(m_tips)
     all_tips.extend(w_tips)
@@ -461,5 +569,8 @@ def score_hourly_conditions(
         species_scores=species_scores,
         buoy_calibration_applied=buoy_applied,
         calibrating_buoy_name=buoy_name,
-        tactical_tips=all_tips[:4],
+        bathymetry=bathymetry,
+        water_clarity=water_clarity,
+        river_runoff=river_runoff,
+        tactical_tips=all_tips[:5],
     )

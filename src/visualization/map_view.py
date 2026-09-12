@@ -1,10 +1,10 @@
 """
 Interactive Folium map visualization for Andalusian fishing spots, custom clicked points,
-and Puertos del Estado oceanographic buoy stations with dynamic multi-species coloring and auto-zoom.
+oceanographic buoys, bathymetric hotspots, and river mouths / plume layers.
 """
 
 from __future__ import annotations
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Any
 import folium
 from folium import plugins
 
@@ -109,9 +109,11 @@ def render_spot_popup_html(spot: Spot, forecast: HourlySpotForecast, score_mode:
     sc = forecast.score
     m = forecast.marine
     w = forecast.weather
-    sol = forecast.solunar_summary
     tide = sc.tide_state
     wind_asp = sc.wind_aspect
+    bathy = sc.bathymetry
+    clarity = sc.water_clarity
+    river = sc.river_runoff
 
     spot_icon = get_spot_type_icon(spot.spot_type)
     active_val, active_label = get_display_score_for_mode(sc, score_mode)
@@ -143,13 +145,48 @@ def render_spot_popup_html(spot: Spot, forecast: HourlySpotForecast, score_mode:
         </div>
         """
 
+    thermal_front_html = ""
+    if clarity and clarity.thermal_front_detected:
+        thermal_front_html = f"""
+        <div style='background-color:#fdf2f8; color:#9d174d; padding:3px 6px; border-radius:4px; font-size:10px; margin-top:4px; font-weight:600;'>
+            🌊 Frente Térmico / Choque de Masas ({clarity.sst_gradient_c_km:.2f} °C/km)
+        </div>
+        """
+
     tips_html = "".join(
         f"<li style='margin-bottom:3px; font-size:11px; color:#475569;'>{tip}</li>"
-        for tip in sc.tactical_tips[:2]
+        for tip in sc.tactical_tips[:3]
     )
 
+    bathy_info = ""
+    if bathy:
+        bathy_info = f"""
+        <div style='background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px; margin-bottom: 6px; font-size: 11px;'>
+            <span style='color: #166534; font-weight: 700;'>⛰️ TOPOGRAFÍA: {bathy.structure_type}</span><br>
+            <span style='color: #374151;'>Pendiente: <b>{bathy.depth_gradient_pct}%</b> • Rugosidad: <b>{bathy.rugosity_index}</b> • Score Hotspot: <b>{bathy.topographic_hotspot_score:.0f}/100</b></span>
+        </div>
+        """
+
+    clarity_info = ""
+    if clarity:
+        clarity_info = f"""
+        <div style='background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 6px; margin-bottom: 6px; font-size: 11px;'>
+            <span style='color: #0369a1; font-weight: 700;'>👁️ CLARIDAD: {clarity.clarity_class}</span><br>
+            <span style='color: #374151;'>Disco Secchi: <b>{clarity.secchi_depth_m} m</b> • Turbidez: <b>{clarity.turbidity_ntu} NTU</b></span>
+        </div>
+        """
+
+    river_info = ""
+    if river and river.plume_active:
+        river_info = f"""
+        <div style='background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px; margin-bottom: 6px; font-size: 11px;'>
+            <span style='color: #b45309; font-weight: 700;'>🏞️ PLUMA FLUVIAL ACTIVA: {river.nearest_river_name}</span><br>
+            <span style='color: #374151;'>Distancia boca: <b>{river.distance_to_mouth_km} km</b> • Caída Salinidad: <b>-{river.salinity_drop_psu} PSU</b></span>
+        </div>
+        """
+
     html = f"""
-    <div style='font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; width: 300px; padding: 2px;'>
+    <div style='font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; width: 310px; padding: 2px;'>
         <div style='border-bottom: 2px solid {active_color}; padding-bottom: 6px; margin-bottom: 8px;'>
             <div style='display: flex; justify-content: space-between; align-items: center;'>
                 <span style='font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 700;'>
@@ -195,8 +232,12 @@ def render_spot_popup_html(spot: Spot, forecast: HourlySpotForecast, score_mode:
             </div>
         </div>
 
+        {bathy_info}
+        {clarity_info}
+        {river_info}
         {window_badge}
         {buoy_calib_html}
+        {thermal_front_html}
 
         <div style='margin-top: 8px;'>
             <div style='font-size: 10px; font-weight: 700; color: #475569; margin-bottom: 3px;'>ESPECIES CLAVE:</div>
@@ -275,11 +316,12 @@ def create_andalucia_fishing_map(
     subzone_filter: str = "Toda Andalucía",
     custom_spot_data: Optional[Tuple[Spot, HourlySpotForecast]] = None,
     buoys_data: Optional[List[Tuple[MarineBuoy, BuoyObservation]]] = None,
+    rivers_data: Optional[List[Dict[str, Any]]] = None,
     score_mode: str = "GLOBAL",
 ) -> folium.Map:
     """
     Generates Folium map of Andalusia with multi-species score coloring,
-    custom clicked GPS points, and oceanographic buoys layer.
+    custom clicked GPS points, oceanographic buoys, and river mouths / plume layer.
     """
     center_lat, center_lon, zoom = calculate_optimal_viewport(spots_data, subzone_filter)
 
@@ -312,7 +354,7 @@ def create_andalucia_fishing_map(
     folium.TileLayer(
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         attr="Esri World Imagery",
-        name="🛰️ Satélite Esri (Máximo Detalle)",
+        name="🛰️ Satélite Esri (Relieve y Costas)",
         control=True,
     ).add_to(m)
 
@@ -320,7 +362,9 @@ def create_andalucia_fishing_map(
     fg_excelente = folium.FeatureGroup(name="🟢 Spots Excelentes (> 75)", show=True)
     fg_muy_bueno = folium.FeatureGroup(name="🟡 Spots Favorables (50 - 74)", show=True)
     fg_desfavorable = folium.FeatureGroup(name="🔴 Spots Desfavorables (< 50)", show=True)
-    fg_buoys = folium.FeatureGroup(name="⚓ Boyas Oceanográficas (Puertos del Estado)", show=True)
+    fg_hotspots = folium.FeatureGroup(name="⛰️ Hotspots Topográficos (Cantiles y Bajos)", show=False)
+    fg_rivers = folium.FeatureGroup(name="🏞️ Desembocaduras y Plumas Fluviales", show=True)
+    fg_buoys = folium.FeatureGroup(name="⚓ Boyas Oceanográficas (REDEXT)", show=True)
 
     # Add standard spots
     for spot, forecast in spots_data:
@@ -362,8 +406,11 @@ def create_andalucia_fishing_map(
         )
 
         popup_content = render_spot_popup_html(spot, forecast, score_mode=score_mode)
-        popup = folium.Popup(popup_content, max_width=340)
-        tooltip_text = f"<b>{spot.name}</b> ({spot.spot_type})<br>Score: <b>{disp_score:.0f}/100</b><br>Ola: {forecast.marine.wave_height}m | Marea: Coef. {forecast.score.tide_state.coefficient}"
+        popup = folium.Popup(popup_content, max_width=350)
+        
+        bathy_text = f"Topografía: {forecast.score.bathymetry.structure_type}" if forecast.score.bathymetry else ""
+        clarity_text = f"Claridad: {forecast.score.water_clarity.clarity_class}" if forecast.score.water_clarity else ""
+        tooltip_text = f"<b>{spot.name}</b> ({spot.spot_type})<br>Score: <b>{disp_score:.0f}/100</b><br>{bathy_text}<br>{clarity_text}"
 
         marker = folium.Marker(
             location=[spot.latitude, spot.longitude],
@@ -389,6 +436,20 @@ def create_andalucia_fishing_map(
             marker.add_to(fg_muy_bueno)
         else:
             marker.add_to(fg_desfavorable)
+
+        # If it's a high topographic hotspot, also mark it in hotspots layer
+        if forecast.score.bathymetry and forecast.score.bathymetry.topographic_hotspot_score >= 68.0:
+            hotspot_marker = folium.CircleMarker(
+                location=[spot.latitude, spot.longitude],
+                radius=14,
+                color="#7c3aed",
+                weight=2,
+                fill=True,
+                fill_color="#c4b5fd",
+                fill_opacity=0.6,
+                tooltip=f"<b>⛰️ Hotspot Topográfico: {spot.name}</b><br>{forecast.score.bathymetry.structure_type} (Score: {forecast.score.bathymetry.topographic_hotspot_score:.0f}/100)",
+            )
+            hotspot_marker.add_to(fg_hotspots)
 
     # Render Custom Clicked Spot if present
     if custom_spot_data:
@@ -418,7 +479,7 @@ def create_andalucia_fishing_map(
         c_marker = folium.Marker(
             location=[c_spot.latitude, c_spot.longitude],
             icon=folium.DivIcon(icon_size=(42, 42), icon_anchor=(21, 21), html=custom_icon_html),
-            popup=folium.Popup(render_spot_popup_html(c_spot, c_fc, score_mode=score_mode), max_width=340),
+            popup=folium.Popup(render_spot_popup_html(c_spot, c_fc, score_mode=score_mode), max_width=350),
             tooltip=f"<b>📍 Punto Clicado / Personalizado</b><br>Score: <b>{c_score:.0f}/100</b>",
         )
         folium.CircleMarker(
@@ -461,9 +522,54 @@ def create_andalucia_fishing_map(
             )
             buoy_marker.add_to(fg_buoys)
 
+    # Render Rivers and Plumes Layer
+    if rivers_data:
+        for r in rivers_data:
+            r_lat = r["mouth_latitude"]
+            r_lon = r["mouth_longitude"]
+            reach_km = r.get("plume_reach_km", 8.0)
+
+            # Plume circle
+            folium.Circle(
+                location=[r_lat, r_lon],
+                radius=reach_km * 1000.0,
+                color="#b45309",
+                weight=1,
+                fill=True,
+                fill_color="#f59e0b",
+                fill_opacity=0.15,
+                tooltip=f"<b>🏞️ Área de Pluma Fluvial: {r['name']}</b> (Radio ~{reach_km:.0f} km)",
+            ).add_to(fg_rivers)
+
+            river_icon_html = f"""
+            <div style='
+                background: #d97706;
+                color: white;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                border: 2px solid white;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            '>
+                🏞️
+            </div>
+            """
+            folium.Marker(
+                location=[r_lat, r_lon],
+                icon=folium.DivIcon(icon_size=(28, 28), icon_anchor=(14, 14), html=river_icon_html),
+                popup=folium.Popup(f"<b>🏞️ {r['name']}</b><br>Cuenca: {r.get('basin_area_km2', 0):,} km²<br>Caudal medio: {r.get('avg_discharge_m3s', 0)} m³/s<br>{r.get('description', '')}", max_width=280),
+                tooltip=f"<b>🏞️ Desembocadura: {r['name']}</b>",
+            ).add_to(fg_rivers)
+
     fg_excelente.add_to(m)
     fg_muy_bueno.add_to(m)
     fg_desfavorable.add_to(m)
+    fg_hotspots.add_to(m)
+    fg_rivers.add_to(m)
     fg_buoys.add_to(m)
 
     folium.LayerControl(position="topright", collapsed=False).add_to(m)

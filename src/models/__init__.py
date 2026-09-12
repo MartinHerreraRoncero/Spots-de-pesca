@@ -1,5 +1,6 @@
 """
-Model definitions for spots, marine buoys, tides, wind aspect, species scores, solunar, and oceanography.
+Model definitions for spots, marine buoys, tides, wind aspect, species scores,
+solunar, bathymetry, water clarity, and river runoff.
 """
 
 from src.models.spot import (
@@ -9,6 +10,9 @@ from src.models.spot import (
     TideState,
     WindRelativeAspect,
     SpeciesScores,
+    BathymetryProfile,
+    WaterClarityConditions,
+    RiverRunoffConditions,
     SolunarWindow,
     SolunarDaySummary,
     MarineConditions,
@@ -25,6 +29,9 @@ __all__ = [
     "TideState",
     "WindRelativeAspect",
     "SpeciesScores",
+    "BathymetryProfile",
+    "WaterClarityConditions",
+    "RiverRunoffConditions",
     "SolunarWindow",
     "SolunarDaySummary",
     "MarineConditions",

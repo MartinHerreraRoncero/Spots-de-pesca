@@ -3,14 +3,18 @@ Aplicación Principal Streamlit: Sistema de Predicción y Scoring de Pesca Marin
 Incluye:
 - Modo de Scoring Especializado por Especie (Dorada, Lubina, Sargo, Calamar, Dentón, Corvina) + Score Global
 - Mareas Astronómicas, Coeficientes y Repuntes Hidráulicos
+- Corrientes Marinas Físicas en Nudos (Knots) y Dirección de Flujo
 - Viento Relativo a la Costa (Onshore / Offshore / Upwelling)
 - Asimilación de Datos y Calibración In-Situ con Boyas de Puertos del Estado (REDEXT / REDCOS)
 - Modo Clic en el Mapa (análisis de cualquier coordenada GPS libre)
+- ⛰️ Relieve Submarino y Gradientes Batimétricos (EMODnet Bathymetry & Rugosidad)
+- 🛰️ Frentes Térmicos Satelitales (SST Gradients) y Claridad Bio-Óptica del Agua (Secchi & Turbidez NTU)
+- 🏞️ Descarga de Ríos, Pluviosidad en Cuencas y Plumas de Salinidad (12 Cuencas Andaluzas)
 """
 
 from __future__ import annotations
 from datetime import datetime, timezone, timedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
@@ -25,6 +29,7 @@ from src.fetchers.open_meteo import (
     get_buoy_telemetry_snapshot,
 )
 from src.analytics.solunar import compute_daily_solunar
+from src.analytics.river_runoff import load_rivers_catalog
 from src.visualization.map_view import (
     create_andalucia_fishing_map,
     get_spot_type_icon,
@@ -40,7 +45,7 @@ from src.visualization.charts import (
 
 # Page configuration
 st.set_page_config(
-    page_title="PescaMar Andalucía | GIS, Solunar, Mareas, Clic & Boyas",
+    page_title="PescaMar Andalucía | GIS, Solunar, Mareas, Clic, Boyas & Batimetría",
     page_icon="🎣",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -153,6 +158,11 @@ def get_cached_buoys() -> List[MarineBuoy]:
     return load_marine_buoys_from_json()
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_rivers() -> List[Dict[str, Any]]:
+    return load_rivers_catalog()
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_cached_spot_forecasts(spot_id: str, _spot_obj: Spot, w_press: float, w_sol: float, w_mar: float, w_wind: float, w_moon: float) -> List[HourlySpotForecast]:
     weights = ScoringWeights(
@@ -168,6 +178,7 @@ def get_cached_spot_forecasts(spot_id: str, _spot_obj: Spot, w_press: float, w_s
 def main():
     all_spots = get_cached_spots()
     all_buoys = get_cached_buoys()
+    all_rivers = get_cached_rivers()
 
     # Sidebar Header
     st.sidebar.markdown("""
@@ -337,7 +348,7 @@ def main():
 
     # Compute Snapshot for all filtered spots at target_dt
     spots_snapshot: List[Tuple[Spot, HourlySpotForecast]] = []
-    with st.spinner(f"Calculando modelos oceanográficos y de especies en {selected_subzone_key}..."):
+    with st.spinner(f"Calculando modelos oceanográficos, batimétricos y de especies en {selected_subzone_key}..."):
         for sp in filtered_spots:
             fc_list = get_cached_spot_forecasts(
                 sp.id, sp,
@@ -412,7 +423,7 @@ def main():
     # 1. TAB: INTERACTIVE MAP & CLICK MODE
     with tab_map:
         st.markdown(f"#### Mapa Granular: **{selected_subzone_key}** — Modo: **{species_mode_options[selected_species_mode]}**")
-        st.info("💡 **Modo Clic en el Mapa:** Haz clic en cualquier cala, espigón o coordenada para analizarla. Los círculos reflejan la puntuación específica para la especie seleccionada.")
+        st.info("💡 **Modo Clic en el Mapa:** Haz clic en cualquier cala, espigón o coordenada para analizarla. Capas activas: Relieve submarino, desembocaduras de ríos y boyas oficiales.")
 
         folium_map = create_andalucia_fishing_map(
             spots_data=spots_snapshot,
@@ -420,6 +431,7 @@ def main():
             subzone_filter=selected_subzone_key,
             custom_spot_data=custom_spot_forecast_tuple,
             buoys_data=buoys_telemetry,
+            rivers_data=all_rivers,
             score_mode=selected_species_mode,
         )
 
@@ -471,6 +483,9 @@ def main():
         sol = current_spot_fc.solunar_summary
         tide = sc.tide_state
         wind_asp = sc.wind_aspect
+        bathy = sc.bathymetry
+        clarity = sc.water_clarity
+        river = sc.river_runoff
 
         spec_val, spec_name = get_display_score_for_mode(sc, selected_species_mode)
 
@@ -518,8 +533,52 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
+        # Advanced Oceanographic Diagnostics Row: Bathymetry, Water Clarity, River Plumes
+        if bathy and clarity and river:
+            st.markdown("##### 🔬 Diagnóstico Oceanográfico Avanzado (Relieve, Claridad y Ríos):")
+            c_bathy, c_clarity, c_river = st.columns(3)
+            with c_bathy:
+                st.markdown(f"""
+                <div style='background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px;'>
+                    <div style='font-size: 11px; font-weight: 700; color: #166534;'>⛰️ RELIEVE SUBMARINO (EMODNET)</div>
+                    <div style='font-size: 15px; font-weight: 800; color: #0f172a; margin: 3px 0;'>{bathy.structure_type}</div>
+                    <div style='font-size: 12px; color: #374151;'>
+                        • Pendiente del fondo: <b>{bathy.depth_gradient_pct}%</b><br>
+                        • Índice Rugosidad: <b>{bathy.rugosity_index}</b><br>
+                        • Hotspot Estructural: <b>{bathy.topographic_hotspot_score:.0f}/100</b>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with c_clarity:
+                st.markdown(f"""
+                <div style='background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px;'>
+                    <div style='font-size: 11px; font-weight: 700; color: #0369a1;'>👁️ CLARIDAD DEL AGUA SATELITAL</div>
+                    <div style='font-size: 15px; font-weight: 800; color: #0f172a; margin: 3px 0;'>{clarity.clarity_class}</div>
+                    <div style='font-size: 12px; color: #374151;'>
+                        • Disco Secchi: <b>{clarity.secchi_depth_m} m</b> de visión<br>
+                        • Turbidez: <b>{clarity.turbidity_ntu} NTU</b><br>
+                        • Frente Térmico: <b>{"🌊 Activo (" + str(clarity.sst_gradient_c_km) + " °C/km)" if clarity.thermal_front_detected else "Estable"}</b>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with c_river:
+                plume_badge = "<span style='color:#b45309; font-weight:700;'>🌊 Pluma Activa</span>" if river.plume_active else "<span style='color:#64748b;'>Inactiva</span>"
+                st.markdown(f"""
+                <div style='background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px;'>
+                    <div style='font-size: 11px; font-weight: 700; color: #b45309;'>🏞️ INFLUENCIA FLUVIAL Y CUENCA</div>
+                    <div style='font-size: 15px; font-weight: 800; color: #0f172a; margin: 3px 0;'>{river.nearest_river_name}</div>
+                    <div style='font-size: 12px; color: #374151;'>
+                        • Distancia a desembocadura: <b>{river.distance_to_mouth_km} km</b><br>
+                        • Estado de la pluma: {plume_badge}<br>
+                        • Salinidad: <b>{f"-{river.salinity_drop_psu} PSU" if river.plume_active else "Oceánica (~37 PSU)"}</b>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
         if sc.tactical_tips:
-            st.markdown("##### 💡 Diagnóstico Biológico, Marea y Viento Relativo:")
+            st.markdown("##### 💡 Diagnóstico Biológico y Consejos Tácticos:")
             tip_cols = st.columns(len(sc.tactical_tips))
             for i, tip in enumerate(sc.tactical_tips):
                 with tip_cols[i]:
@@ -564,6 +623,7 @@ def main():
         table_records = []
         for f in spot_forecasts[:24]:
             val_hour, _ = get_display_score_for_mode(f.score, selected_species_mode)
+            clarity_val = f.score.water_clarity.clarity_class.split('(')[0].strip() if f.score.water_clarity else "—"
             table_records.append({
                 "Hora (UTC)": f.timestamp.strftime("%d/%m %H:00"),
                 f"Score ({species_mode_options[selected_species_mode].split()[1]})": f"{val_hour:.0f}",
@@ -573,6 +633,7 @@ def main():
                 "Ola (m)": f"{f.marine.wave_height:.2f}",
                 "Periodo (s)": f"{f.marine.wave_period:.1f}",
                 "Corriente": f"{f.marine.current_velocity_knots:.2f} kts ({f.marine.current_direction:.0f}°)",
+                "Claridad": clarity_val,
                 "Viento": f"{f.weather.wind_speed_10m:.1f} km/h ({f.score.wind_aspect.wind_type.split()[0]})",
                 "Marea": f"{f.score.tide_state.state_name.split('(')[0]} (Coef. {f.score.tide_state.coefficient})",
                 "Ventana Solunar": f.score.solunar_window_active or "—",
@@ -630,18 +691,19 @@ def main():
         ranking_data = []
         for rank, (sp, fc) in enumerate(spots_snapshot, 1):
             score_val, _ = get_display_score_for_mode(fc.score, selected_species_mode)
+            clarity_str = fc.score.water_clarity.clarity_class.split()[0] if fc.score.water_clarity else "—"
+            bathy_str = fc.score.bathymetry.structure_type.split()[0] if fc.score.bathymetry else sp.spot_type
             ranking_data.append({
                 "Posición": f"#{rank}",
                 "Micro-Spot": sp.name,
                 "Municipio": sp.municipality or sp.province,
-                "Escenario": sp.spot_type,
-                "Fondo": sp.bottom_type,
+                "Estructura": bathy_str,
+                "Claridad": clarity_str,
                 f"Score ({selected_species_mode})": score_val,
                 "Score Global": fc.score.overall_score,
                 "Marea": f"Coef. {fc.score.tide_state.coefficient}",
-                "Viento": f"{fc.weather.wind_speed_10m:.1f} km/h ({fc.score.wind_aspect.wind_type.split()[0]})",
+                "Corriente": f"{fc.marine.current_velocity_knots} kts",
                 "Ola (m)": fc.marine.wave_height,
-                "Periodo (s)": fc.marine.wave_period,
             })
 
         df_rank = pd.DataFrame(ranking_data)
@@ -671,11 +733,11 @@ def main():
         st.markdown("""
         ### 📚 Fundamentos Científicos del Motor Predictivo Avanzado
 
-        **PescaMar Andalucía** integra modelos de física atmosférica, hidrodinámica de fluidos, astronomía orbital y etología marina:
+        **PescaMar Andalucía** integra modelos de física atmosférica, hidrodinámica de fluidos, topografía submarina, astronomía orbital y etología marina:
 
         ---
 
-        #### 1. Dinámica Barométrica y Fisiología de la Vejiga Natatoria (25%)
+        #### 1. Dinámica Barométrica y Fisiología de la Vejiga Natatoria
         * **Descenso Pre-Frontera (\(\Delta P_{3h} \in [-0.5, -1.8]\text{ hPa}\)):** Estimula la alimentación previa a frentes fríos.
         * **Penalización por Caída Violenta (\(<-3.0\text{ hPa}\)):** Desplaza a los peces a zonas profundas.
 
@@ -688,24 +750,21 @@ def main():
 
         ---
 
-        #### 3. Viento Relativo a la Costa (Onshore / Offshore / Upwelling)
-        * **Onshore (De cara):** Oxigena la orilla, acerca alimento hacia la rompiente y enturbia el agua.
-        * **Offshore (De espalda):** Aplana el mar y facilita el lance lejano. En Málaga y Granada, vientos persistentes de tierra generan **Upwelling** (afloramiento de aguas frías profundas).
+        #### 3. ⛰️ Relieve Submarino y Topografía EMODnet
+        * **Gradientes Batimétricos (\(\nabla \text{Profundidad}\)):** Caídas bruscas del fondo (*cantiles* y escalones) donde acechan los depredadores.
+        * **Índice de Rugosidad:** Cuantifica la complejidad estructural del lecho (lajas de piedra, arrecifes vs arenales planos).
 
         ---
 
-        #### 4. Asimilación de Datos con Boyas de Puertos del Estado (REDEXT)
-        * Calibra la altura y periodo de ola en tiempo real comparando las predicciones numéricas con las boyas oceanográficas más cercanas mediante interpolación espacial IDW.
+        #### 4. 🛰️ Frentes Térmicos Satelitales y Claridad del Agua
+        * **Frentes de Temperatura (\(\nabla SST\)):** Zonas de choque entre masas de agua atlánticas y mediterráneas donde se concentra el plancton y los peces pasto.
+        * **Disco de Secchi y Turbidez (NTU):** Clasificación bio-óptica de las aguas (aguas tomadas/chocolate vs aguas cristalinas) que determina si el escenario es propicio para pesca visual (calamar, spinning) o de rastreo olfativo (surfcasting).
 
         ---
 
-        #### 5. Scoring Especializado Multi-Especie
-        * **Dorada / Herrera:** Maximiza pleamares vivas, fondos arenosos y rompiente suave.
-        * **Lubina / Robalo:** Maximiza rompientes fuertes (1.2-1.8m) con espuma y caídas barométricas.
-        * **Sargo:** Maximiza roquedos batidos y periodos de ola largos.
-        * **Calamar / Sepia:** Maximiza aguas transparentes, calma de viento (<8 km/h) y noches de pleamar.
-        * **Dentón / Serviola:** Maximiza cantiles profundos (>15m) y corrientes de fondo.
-        * **Corvina:** Maximiza estuarios y grandes coeficientes de marea en el Atlántico.
+        #### 5. 🏞️ Descarga Fluvial y Plumas de Salinidad
+        * **12 Cuencas Andaluzas:** Monitorización de las desembocaduras de los principales ríos (Guadalquivir, Guadiana, Guadalete, Guadalfeo, etc.).
+        * **Choque Osmótico:** Los aportes de agua dulce y sedimentos disparan la actividad de la lubina y la corvina, mientras que desplazan al calamar mar adentro.
         """)
 
 if __name__ == "__main__":

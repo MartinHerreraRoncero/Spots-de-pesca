@@ -1,5 +1,6 @@
 """
-Analytics package: solunar calculations, tides, wind aspect, and marine multi-species scoring.
+Analytics package: solunar calculations, tides, wind aspect, bathymetry,
+water clarity, river plumes, and marine multi-species scoring.
 """
 
 from src.analytics.solunar import (
@@ -10,6 +11,16 @@ from src.analytics.solunar import (
 from src.analytics.tides import (
     calculate_tide_coefficient,
     compute_spot_tide_state,
+)
+from src.analytics.bathymetry import (
+    calculate_bathymetry_profile,
+)
+from src.analytics.satellite_ocean import (
+    compute_water_clarity_and_fronts,
+)
+from src.analytics.river_runoff import (
+    load_rivers_catalog,
+    compute_river_runoff_impact,
 )
 from src.analytics.scoring import (
     calculate_wind_relative_aspect,
@@ -27,6 +38,10 @@ __all__ = [
     "evaluate_solunar_for_hour",
     "calculate_tide_coefficient",
     "compute_spot_tide_state",
+    "calculate_bathymetry_profile",
+    "compute_water_clarity_and_fronts",
+    "load_rivers_catalog",
+    "compute_river_runoff_impact",
     "calculate_wind_relative_aspect",
     "apply_buoy_bias_correction",
     "calculate_pressure_score",

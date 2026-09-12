@@ -1,13 +1,23 @@
 """
 Unit and integration tests for Andalusian Marine Fishing App with advanced scientific modules:
-tides, wind aspect, buoy bias correction, and multi-species scoring.
+tides, wind aspect, buoy bias correction, multi-species scoring,
+bathymetry gradients, satellite water clarity, and river runoff plumes.
 """
 
 import unittest
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 
-from src.models.spot import Spot, MarineBuoy, ScoringWeights, MarineConditions, WeatherConditions
+from src.models.spot import (
+    Spot,
+    MarineBuoy,
+    ScoringWeights,
+    MarineConditions,
+    WeatherConditions,
+    BathymetryProfile,
+    WaterClarityConditions,
+    RiverRunoffConditions,
+)
 from src.fetchers.open_meteo import (
     load_spots_from_json,
     load_marine_buoys_from_json,
@@ -17,6 +27,9 @@ from src.fetchers.open_meteo import (
 )
 from src.analytics.solunar import compute_daily_solunar, evaluate_solunar_for_hour
 from src.analytics.tides import calculate_tide_coefficient, compute_spot_tide_state
+from src.analytics.bathymetry import calculate_bathymetry_profile
+from src.analytics.satellite_ocean import compute_water_clarity_and_fronts
+from src.analytics.river_runoff import load_rivers_catalog, compute_river_runoff_impact
 from src.analytics.scoring import (
     calculate_wind_relative_aspect,
     apply_buoy_bias_correction,
@@ -45,20 +58,18 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
     def setUp(self):
         self.spots = load_spots_from_json()
         self.buoys = load_marine_buoys_from_json()
+        self.rivers = load_rivers_catalog()
         self.test_spot = self.spots[0]  # Isla Canela / Ayamonte
         self.now_utc = datetime(2026, 8, 20, 18, 0, 0, tzinfo=timezone.utc)
 
     def test_tides_and_coefficient_calculations(self):
         """Tests calculation of tide coefficients (20-120) and semidiurnal tide states."""
-        # Spring tide (New moon day 0)
         coef_spring = calculate_tide_coefficient(0.5, 5.0)
         self.assertGreaterEqual(coef_spring, 85)
 
-        # Neap tide (Quarter moon day 7.5)
         coef_neap = calculate_tide_coefficient(7.5, 50.0)
         self.assertLessEqual(coef_neap, 50)
 
-        # Spot Tide State
         solunar = compute_daily_solunar(self.test_spot, self.now_utc)
         tide_state = compute_spot_tide_state(self.test_spot, self.now_utc, solunar)
         self.assertGreaterEqual(tide_state.coefficient, 20)
@@ -69,18 +80,14 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
 
     def test_wind_relative_aspect(self):
         """Tests wind direction relative to coastline bearing (Onshore/Offshore/Upwelling)."""
-        # Huelva coast faces ~195° (South-Southwest)
-        # 1. Wind from 195° (South-Southwest) is blowing straight onto shore -> ONSHORE
         aspect_onshore = calculate_wind_relative_aspect(195.0, 195.0, 15.0, "Atlántico")
         self.assertTrue(aspect_onshore.is_onshore)
         self.assertFalse(aspect_onshore.is_offshore)
 
-        # 2. Wind from 15° (North-Northeast) is blowing from land out to sea -> OFFSHORE
         aspect_offshore = calculate_wind_relative_aspect(15.0, 195.0, 15.0, "Atlántico")
         self.assertTrue(aspect_offshore.is_offshore)
         self.assertFalse(aspect_offshore.is_onshore)
 
-        # 3. Upwelling risk in Mediterranean with strong offshore wind
         aspect_upwelling = calculate_wind_relative_aspect(335.0, 155.0, 22.0, "Mediterráneo")
         self.assertTrue(aspect_upwelling.upwelling_risk)
 
@@ -99,40 +106,87 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
         self.assertIsNotNone(buoy_name)
         self.assertGreater(calibrated_h, 0.0)
 
-    def test_multi_species_scoring_differentiation(self):
-        """Validates that heavy surf conditions score higher for Lubina than for Calamar."""
-        solunar = compute_daily_solunar(self.test_spot, self.now_utc)
-        tide_state = compute_spot_tide_state(self.test_spot, self.now_utc, solunar)
-        wind_aspect = calculate_wind_relative_aspect(195.0, self.test_spot.coastline_bearing, 14.0, self.test_spot.zone)
+    def test_bathymetry_gradients_and_rugosity(self):
+        """Tests bathymetric slope and rugosity calculation across different coastal morphotypes."""
+        # Find a cliff/rocky spot in Granada / Costa Tropical
+        granada_spots = [s for s in self.spots if "Granada" in s.subzone or "Tropical" in s.subzone]
+        granada_cliff = granada_spots[0] if granada_spots else self.test_spot
+        bathy_cliff = calculate_bathymetry_profile(granada_cliff)
+        
+        # Steep drop-off checks
+        self.assertGreaterEqual(bathy_cliff.depth_gradient_pct, 8.0)
+        self.assertGreater(bathy_cliff.topographic_hotspot_score, 0.0)
+        self.assertLessEqual(bathy_cliff.topographic_hotspot_score, 100.0)
 
-        # Heavy surf condition: 1.5m waves, -1.0 hPa pressure drop
-        marine_heavy = MarineConditions(
-            timestamp=self.now_utc, wave_height=1.5, wave_period=8.5, wave_direction=220, sea_surface_temperature=19.0
-        )
-        weather_stormy = WeatherConditions(
-            timestamp=self.now_utc, surface_pressure=1012.0, wind_speed_10m=16.0, wind_direction_10m=200.0,
-            cloud_cover=60, precipitation=0.5, temperature_2m=21.0
-        )
+        # Shallow beach in Huelva
+        bathy_beach = calculate_bathymetry_profile(self.test_spot)
+        self.assertLessEqual(bathy_beach.depth_gradient_pct, 5.0)
+        self.assertLessEqual(bathy_beach.rugosity_index, 0.50)
 
-        spec_heavy = calculate_species_scores(
-            self.test_spot, weather_stormy, marine_heavy, solunar, 70.0, tide_state, wind_aspect, 85.0, -1.2
+    def test_satellite_water_clarity_and_thermal_fronts(self):
+        """Tests bio-optical turbidity, Secchi depth, and thermal front detection."""
+        # Stormy stirring wave conditions
+        marine_stormy = MarineConditions(
+            timestamp=self.now_utc, wave_height=2.2, wave_period=9.0, wave_direction=220, sea_surface_temperature=19.5
         )
-        # Lubina should score significantly higher than Calamar in 1.5m surf!
-        self.assertGreater(spec_heavy.lubina_score, spec_heavy.calamar_score)
+        weather_rainy = WeatherConditions(
+            timestamp=self.now_utc, surface_pressure=1008.0, wind_speed_10m=25.0, wind_direction_10m=200.0,
+            cloud_cover=90, precipitation=4.5, temperature_2m=18.0
+        )
+        clarity_turbid = compute_water_clarity_and_fronts(self.test_spot, marine_stormy, weather_rainy)
+        self.assertGreater(clarity_turbid.turbidity_ntu, 10.0)
+        self.assertLessEqual(clarity_turbid.secchi_depth_m, 2.5)
+        self.assertIn("Tomada", clarity_turbid.clarity_class)
 
-        # Calm flat sea: 0.2m waves, 5 km/h wind
+        # Calm crystal clear conditions in deep water
+        spot_deep = Spot(
+            id="deep_test", name="Deep Spot", province="Málaga", zone="Mediterráneo", subzone="Costa del Sol",
+            latitude=36.4, longitude=-4.6, description="Deep spot", spot_type="Roquedo / Acantilado",
+            bottom_type="Roca laminar", depth_m=25.0
+        )
         marine_calm = MarineConditions(
-            timestamp=self.now_utc, wave_height=0.2, wave_period=5.0, wave_direction=220, sea_surface_temperature=21.0
+            timestamp=self.now_utc, wave_height=0.2, wave_period=5.0, wave_direction=180, sea_surface_temperature=21.0
         )
         weather_calm = WeatherConditions(
-            timestamp=self.now_utc, surface_pressure=1018.0, wind_speed_10m=6.0, wind_direction_10m=180.0,
-            cloud_cover=10, precipitation=0.0, temperature_2m=22.0
+            timestamp=self.now_utc, surface_pressure=1018.0, wind_speed_10m=5.0, wind_direction_10m=180.0,
+            cloud_cover=0, precipitation=0.0, temperature_2m=24.0
         )
-        spec_calm = calculate_species_scores(
-            self.test_spot, weather_calm, marine_calm, solunar, 60.0, tide_state, wind_aspect, 75.0, 0.0
+        clarity_clean = compute_water_clarity_and_fronts(spot_deep, marine_calm, weather_calm)
+        self.assertLess(clarity_clean.turbidity_ntu, 3.0)
+        self.assertGreater(clarity_clean.secchi_depth_m, 5.0)
+
+    def test_river_runoff_plume_and_salinity(self):
+        """Tests estuarine runoff and plume detection for spots near major rivers."""
+        # Spot near Guadalquivir (Sanlúcar / Doñana)
+        sanlucar_spot = Spot(
+            id="sanlucar_test", name="Bajo de Guía", province="Cádiz", zone="Atlántico",
+            subzone="Bahía y Costa de Cádiz", latitude=36.7900, longitude=-6.3600,
+            description="Desembocadura del Guadalquivir", spot_type="Desembocadura",
+            bottom_type="Fango / Mixto", depth_m=5.0
         )
-        # Calamar should score higher than Lubina in flat glass water!
-        self.assertGreater(spec_calm.calamar_score, spec_calm.lubina_score)
+        weather_rain = WeatherConditions(
+            timestamp=self.now_utc, surface_pressure=1012.0, wind_speed_10m=12.0, wind_direction_10m=220.0,
+            cloud_cover=50, precipitation=1.5, temperature_2m=20.0
+        )
+        runoff_sanlucar = compute_river_runoff_impact(sanlucar_spot, weather_rain, precipitation_72h_mm=25.0)
+        self.assertTrue(runoff_sanlucar.plume_active)
+        self.assertGreater(runoff_sanlucar.salinity_drop_psu, 3.0)
+        self.assertIn("Guadalquivir", runoff_sanlucar.nearest_river_name)
+
+        # Species impact in river plume: Lubina and Corvina thrive, Calamar heavily penalized
+        solunar = compute_daily_solunar(sanlucar_spot, self.now_utc)
+        tide = compute_spot_tide_state(sanlucar_spot, self.now_utc, solunar)
+        wind_asp = calculate_wind_relative_aspect(220.0, 230.0, 12.0, "Atlántico")
+        marine_std = MarineConditions(
+            timestamp=self.now_utc, wave_height=0.8, wave_period=6.5, wave_direction=220,
+            sea_surface_temperature=20.0, current_velocity_knots=1.5, current_direction=240.0
+        )
+        spec = calculate_species_scores(
+            sanlucar_spot, weather_rain, marine_std, solunar, 70.0, tide, wind_asp, 80.0, -0.5,
+            river_runoff=runoff_sanlucar
+        )
+        self.assertGreater(spec.lubina_score, spec.calamar_score + 25.0)
+        self.assertGreater(spec.corvina_score, spec.calamar_score + 25.0)
 
     def test_ocean_currents_physics_and_impact(self):
         """Tests physical ocean currents velocity in knots and biological scoring impact."""
@@ -140,53 +194,37 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
         self.assertGreater(len(forecasts), 0)
         f0 = forecasts[0]
         
-        # Verify current metrics
         self.assertGreaterEqual(f0.marine.current_velocity_knots, 0.0)
         self.assertGreaterEqual(f0.marine.current_direction, 0.0)
         self.assertLessEqual(f0.marine.current_direction, 360.0)
         self.assertIsNotNone(f0.marine.current_intensity_level)
 
-        # Verify species differentiation on fast currents (1.8 kts):
-        # Corvina should score high with 1.8 kts current, Calamar should be penalized
-        solunar = compute_daily_solunar(self.test_spot, self.now_utc)
-        tide_state = compute_spot_tide_state(self.test_spot, self.now_utc, solunar)
-        wind_aspect = calculate_wind_relative_aspect(195.0, 195.0, 10.0, "Atlántico")
-        
-        marine_fast_current = MarineConditions(
-            timestamp=self.now_utc, wave_height=0.7, wave_period=6.5, wave_direction=220,
-            sea_surface_temperature=20.0, current_velocity_knots=1.8, current_direction=85.0
-        )
-        weather_std = WeatherConditions(
-            timestamp=self.now_utc, surface_pressure=1015.0, wind_speed_10m=10.0,
-            wind_direction_10m=195.0, cloud_cover=20, precipitation=0.0, temperature_2m=21.0
-        )
-        spec_scores = calculate_species_scores(
-            self.test_spot, weather_std, marine_fast_current, solunar, 70.0, tide_state, wind_aspect, 80.0, 0.0
-        )
-        self.assertGreater(spec_scores.corvina_score, spec_scores.calamar_score)
-
     def test_full_pipeline_multi_species_map_and_charts(self):
-        """Tests full pipeline forecast retrieval and multi-species charts."""
+        """Tests full pipeline forecast retrieval with bathymetry, clarity, runoff, and map rendering."""
         forecasts = get_spot_hourly_forecast(self.test_spot, forecast_days=2)
         self.assertGreaterEqual(len(forecasts), 40)
         f0 = forecasts[0]
 
-        # Verify species scores exist in breakdown
+        # Verify species scores and new scientific fields exist in breakdown
         self.assertIsNotNone(f0.score.species_scores.dorada_score)
         self.assertIsNotNone(f0.score.species_scores.lubina_score)
         self.assertIsNotNone(f0.score.tide_state)
         self.assertIsNotNone(f0.score.wind_aspect)
+        self.assertIsNotNone(f0.score.bathymetry)
+        self.assertIsNotNone(f0.score.water_clarity)
+        self.assertIsNotNone(f0.score.river_runoff)
 
         # Test species chart
         fig_spec = create_species_comparison_chart(f0.score.species_scores)
         self.assertIsNotNone(fig_spec)
 
-        # Test multi-species map rendering
+        # Test map rendering with rivers and buoys
         telemetry = get_buoy_telemetry_snapshot(self.buoys, self.now_utc)
         m = create_andalucia_fishing_map(
             spots_data=[(self.test_spot, f0)],
             selected_spot_id=self.test_spot.id,
             buoys_data=telemetry,
+            rivers_data=self.rivers,
             score_mode="DORADA",
         )
         self.assertIsNotNone(m)

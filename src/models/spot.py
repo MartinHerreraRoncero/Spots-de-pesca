@@ -1,7 +1,7 @@
 """
 Data models and typed structures for the Andalusian Marine Fishing App,
 including spots, ocean currents, tides, wind relative aspect, species scoring,
-solunar ephemeris, and oceanographic buoys.
+solunar ephemeris, oceanographic buoys, bathymetric profile, water clarity, and river runoff.
 """
 
 from __future__ import annotations
@@ -106,6 +106,39 @@ class SpeciesScores:
 
 
 @dataclass
+class BathymetryProfile:
+    """Submarine bathymetric gradient and seabed rugosity profile."""
+    depth_m: float  # Current spot depth
+    depth_gradient_pct: float  # Slope % (e.g. 1.5% gentle beach to 25% steep drop-off)
+    rugosity_index: float  # 0.0 (flat sand) to 1.0 (rocky labyrinths, ledges)
+    structure_type: str  # "Cantil pronunciado", "Bajo rocoso somero", "Barra de arena con escalón", "Canalizo de marea", "Plataforma arenosa"
+    topographic_hotspot_score: float  # Structural hotspot quality (0 - 100)
+    drop_off_distance_m: float = 80.0  # Distance to significant drop-off from shore
+
+
+@dataclass
+class WaterClarityConditions:
+    """Bio-optical water clarity, turbidity, and satellite SST thermal front detection."""
+    secchi_depth_m: float  # Visibility depth in meters (0.5m to 12.0m)
+    turbidity_ntu: float  # Turbidity in NTU (0.5 clean to 20+ chocolate)
+    clarity_class: str  # "Agua Tomada (Chocolate)", "Agua Rizada / Nutrientes", "Agua Clara Turquesa", "Agua Azul Cristalina"
+    thermal_front_detected: bool  # True if sea surface temperature gradient exceeds threshold
+    sst_gradient_c_km: float  # °C / km gradient
+    convergence_zone: bool  # True if plankton/nutrient convergence expected
+
+
+@dataclass
+class RiverRunoffConditions:
+    """Hydrological river discharge, basin rain, and freshwater plume impact."""
+    nearest_river_name: str  # e.g. "Río Guadalquivir", "Río Guadiana", "Río Guadalfeo"
+    distance_to_mouth_km: float  # Distance to river mouth
+    basin_rain_72h_mm: float  # Estimated recent accumulated rainfall in river basin
+    plume_active: bool  # True if freshwater & silt plume influences this spot
+    salinity_drop_psu: float  # Estimated salinity reduction (0 to 15+ PSU)
+    plume_impact_summary: str
+
+
+@dataclass
 class SolunarWindow:
     """Represents a specific solunar major or minor activity window."""
     name: str
@@ -166,7 +199,7 @@ class WeatherConditions:
 
 @dataclass
 class ScoreBreakdown:
-    """Comprehensive scoring breakdown with multi-species, currents, tides, and wind aspect."""
+    """Comprehensive scoring breakdown with multi-species, currents, tides, wind aspect, bathymetry, clarity, and runoff."""
     overall_score: float  # 0 - 100
     rating_tier: str
     rating_color: str
@@ -190,6 +223,11 @@ class ScoreBreakdown:
     species_scores: SpeciesScores
     buoy_calibration_applied: bool = False
     calibrating_buoy_name: Optional[str] = None
+    
+    # New Scientific Modules
+    bathymetry: Optional[BathymetryProfile] = None
+    water_clarity: Optional[WaterClarityConditions] = None
+    river_runoff: Optional[RiverRunoffConditions] = None
     
     tactical_tips: List[str] = field(default_factory=list)
 
