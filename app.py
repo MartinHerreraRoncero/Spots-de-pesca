@@ -27,6 +27,7 @@ from src.fetchers.open_meteo import (
     get_spot_hourly_forecast,
     get_all_spots_snapshot,
     get_buoy_telemetry_snapshot,
+)
 from src.analytics.solunar import compute_daily_solunar
 from src.analytics.river_runoff import load_rivers_catalog
 from src.analytics.bathymetry import calculate_bathymetry_profile
@@ -747,7 +748,7 @@ def main():
 
     # 5. TAB: METHODOLOGY & SCIENTIFIC GUIDE
     with tab_guide:
-        st.markdown("""
+        st.markdown(r"""
         ### 📚 Fundamentos Científicos del Motor Predictivo Avanzado
 
         **PescaMar Andalucía** integra modelos de física atmosférica, hidrodinámica de fluidos, topografía submarina, astronomía orbital y etología marina:

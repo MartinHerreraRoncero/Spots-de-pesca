@@ -229,6 +229,11 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
         )
         self.assertIsNotNone(m)
 
+    def test_app_py_syntax(self):
+        """Verifies app.py compiles cleanly without SyntaxErrors."""
+        import py_compile
+        py_compile.compile("app.py", doraise=True)
+
 
 if __name__ == "__main__":
     unittest.main()
