@@ -37,6 +37,18 @@ from src.analytics.poza_detection import (
     evaluate_poza_fishability,
     filter_pozas,
     sync_pozas_with_satellite_pass,
+    contrast_multi_temporal_pozas,
+)
+from src.analytics.coastline import (
+    compute_ndwi,
+    compute_mndwi,
+    get_shoreline_lat_at_lon,
+    is_in_ocean,
+    calculate_distance_to_shore_m,
+    project_seaward_point,
+    enforce_marine_bounds,
+    get_huelva_shoreline_folium_coords,
+    HUELVA_SHORELINE_VERTICES,
 )
 
 __all__ = [
@@ -61,5 +73,15 @@ __all__ = [
     "evaluate_poza_fishability",
     "filter_pozas",
     "sync_pozas_with_satellite_pass",
+    "contrast_multi_temporal_pozas",
+    "compute_ndwi",
+    "compute_mndwi",
+    "get_shoreline_lat_at_lon",
+    "is_in_ocean",
+    "calculate_distance_to_shore_m",
+    "project_seaward_point",
+    "enforce_marine_bounds",
+    "get_huelva_shoreline_folium_coords",
+    "HUELVA_SHORELINE_VERTICES",
 ]
 

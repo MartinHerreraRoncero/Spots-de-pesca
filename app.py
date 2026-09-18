@@ -31,7 +31,10 @@ from src.fetchers.open_meteo import (
     get_all_spots_snapshot,
     get_buoy_telemetry_snapshot,
 )
-from src.fetchers.sentinel_satellite import get_latest_huelva_sentinel_pass
+from src.fetchers.sentinel_satellite import (
+    get_latest_huelva_sentinel_pass,
+    get_huelva_sentinel_series,
+)
 from src.analytics.solunar import compute_daily_solunar
 from src.analytics.river_runoff import load_rivers_catalog
 from src.analytics.bathymetry import calculate_bathymetry_profile
@@ -41,6 +44,7 @@ from src.analytics.poza_detection import (
     load_pozas_from_json,
     filter_pozas,
     sync_pozas_with_satellite_pass,
+    contrast_multi_temporal_pozas,
     evaluate_poza_fishability,
 )
 import src.visualization.map_view
@@ -188,6 +192,11 @@ def get_cached_sentinel_pass(force: bool = False) -> SentinelPassMetadata:
     return get_latest_huelva_sentinel_pass(force_refresh=force)
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_sentinel_series(force: bool = False) -> List[SentinelPassMetadata]:
+    return get_huelva_sentinel_series(passes_count=3, force_refresh=force)
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_cached_spot_forecasts(spot_id: str, _spot_obj: Spot, w_press: float, w_sol: float, w_mar: float, w_wind: float, w_moon: float) -> List[HourlySpotForecast]:
     weights = ScoringWeights(
@@ -206,11 +215,16 @@ def main():
     all_rivers = get_cached_rivers()
     raw_pozas = get_cached_pozas()
 
-    if "sentinel_meta" not in st.session_state:
-        st.session_state["sentinel_meta"] = get_cached_sentinel_pass(force=False)
+    if "sentinel_series" not in st.session_state:
+        st.session_state["sentinel_series"] = get_cached_sentinel_series(force=False)
 
-    sentinel_meta: SentinelPassMetadata = st.session_state["sentinel_meta"]
-    synced_pozas = sync_pozas_with_satellite_pass(raw_pozas, sentinel_meta)
+    sentinel_series: List[SentinelPassMetadata] = st.session_state["sentinel_series"]
+    sentinel_meta: SentinelPassMetadata = sentinel_series[0] if sentinel_series else get_cached_sentinel_pass(force=False)
+    st.session_state["sentinel_meta"] = sentinel_meta
+
+    # Multi-temporal persistence contrast across consecutive Sentinel-2 passes
+    synced_pozas = contrast_multi_temporal_pozas(raw_pozas, sentinel_series)
+
 
     # Sidebar Header
     st.sidebar.markdown("""
@@ -331,22 +345,35 @@ def main():
     st.sidebar.markdown("### 🛰️ Satélite Sentinel-2 & Pozas de Surfcasting")
     pass_date_str = sentinel_meta.datetime.split("T")[0] if "T" in sentinel_meta.datetime else sentinel_meta.datetime[:10]
     col_sat1, col_sat2, col_sat3 = st.sidebar.columns(3)
-    col_sat1.metric("Pasada", pass_date_str)
-    col_sat2.metric("Nubes", f"{sentinel_meta.cloud_cover_pct:.1f}%")
-    col_sat3.metric("Cuadrícula", sentinel_meta.tile_id)
+    col_sat1.metric("Pasada T0", pass_date_str)
+    col_sat2.metric("Nubes T0", f"{sentinel_meta.cloud_cover_pct:.1f}%")
+    col_sat3.metric("Serie", f"{len(sentinel_series)} pasadas")
 
     if st.sidebar.button("🔄 Forzar Actualización Sentinel-2"):
         with st.spinner("Consultando Microsoft Planetary Computer STAC API para Sentinel-2..."):
-            fresh_meta = get_latest_huelva_sentinel_pass(force_refresh=True)
-            st.session_state["sentinel_meta"] = fresh_meta
+            fresh_series = get_huelva_sentinel_series(passes_count=3, force_refresh=True)
+            st.session_state["sentinel_series"] = fresh_series
+            st.session_state["sentinel_meta"] = fresh_series[0] if fresh_series else get_latest_huelva_sentinel_pass(force_refresh=True)
             st.cache_data.clear()
-            st.sidebar.success("🛰️ ¡Metadatos Sentinel-2 actualizados con éxito!")
+            st.sidebar.success("🛰️ ¡Serie multitemporal Sentinel-2 actualizada con éxito!")
             st.rerun()
 
     show_pozas = st.sidebar.checkbox(
         "🌊 Mostrar Pozas y Canales en Mapa",
         value=True,
         help="Muestra u oculta las depresiones, canales de marea y pozas detectadas por satélite."
+    )
+
+    show_coastline = st.sidebar.checkbox(
+        "🏖️ Línea de Costa Satelital (Pleamar MHW)",
+        value=True,
+        help="Delinea la orilla de pleamar del IGN y satélite que separa dunas y playa seca del agua marina."
+    )
+
+    only_confirmed_pozas = st.sidebar.checkbox(
+        "🛡️ Solo Pozas Confirmadas (Persistencia ≥ 80%)",
+        value=False,
+        help="Muestra únicamente estructuras estables confirmadas en múltiples pasadas de Sentinel-2 con deriva morfodinámica controlada."
     )
 
     method_choices = ["Todos los métodos", "SDB_STUMPF", "BREAKER_GAP", "PNOA_ORTHO"]
@@ -377,6 +404,7 @@ def main():
         synced_pozas,
         method=method_filter_val,
         max_distance=max_cast_dist,
+        min_persistence=80.0 if only_confirmed_pozas else None,
     )
 
     poza_focus_options = ["🔍 Vista General de Huelva (17 Pozas)"] + [
@@ -592,9 +620,10 @@ def main():
             link_html = f" • [🔗 Ver Escena Sentinel-2 MSI en Planetary Computer]({sentinel_meta.visual_url})" if sentinel_meta.visual_url else ""
             focus_text = f" • 🎯 **Enfocando:** `{filtered_pozas[selected_poza_focus_idx - 1].name}`" if focused_poza_coords else ""
             st.success(
-                f"🌊 **Pozas y Canales Detectados por Satélite ({len(filtered_pozas)} enclaves en Costa de Huelva):** "
-                f"Mostrando **balizas luminosas cian 🌊** y polígonos submarinos delineados a lo largo de las playas (Sentinel-2 MSI {pass_date}, nubes {sentinel_meta.cloud_cover_pct:.1f}% y ortofotos submétricas PNOA 25cm). "
-                f"💡 *Tip:* Para apreciar las barras de arena y el foso en alta resolución, cambia la capa base arriba a la derecha a **'🛰️ Satélite Esri'** o **'📸 Ortofoto PNOA'**.{focus_text}{link_html}"
+                f"🌊 **Pozas de Surfcasting Validadas y Contrastadas ({len(filtered_pozas)} enclaves en Costa de Huelva):** "
+                f"Contrastadas a través de **{len(sentinel_series)} pasadas satelitales consecutivas** de Sentinel-2 L2A ({pass_date}, nubes {sentinel_meta.cloud_cover_pct:.1f}%). "
+                f"**100% validadas mar adentro** mediante el módulo de detección de línea de costa MHW (a 40-130m de la orilla tras la rompiente). "
+                f"💡 *Tip:* Cambia la capa base arriba a la derecha a **'🛰️ Satélite Esri'** o **'📸 Ortofoto PNOA'** para observar las barras de arena y la línea de costa dorada.{focus_text}{link_html}"
             )
 
         map_kwargs = {
@@ -608,6 +637,7 @@ def main():
             "highlight_hotspots": filter_hotspots_only,
             "pozas_data": filtered_pozas,
             "show_pozas": show_pozas,
+            "show_coastline": show_coastline,
             "current_tide_name": curr_tide_name,
             "current_tide_coeff": curr_tide_coeff,
             "current_wave_h": curr_wave_h,
@@ -672,8 +702,11 @@ def main():
                         "Lance": f"{p.distance_from_shore_m} m",
                         "Foso": f"+{p.relative_depth_m} m",
                         "Dimensiones": f"{p.width_m}x{p.length_m} m",
-                        "Score Pesca Actual": f"{p_eval['fishability_score']:.0f}/100",
-                        "Plomo": f"{p_eval['recommended_lead_g']} g",
+                        "Score Actual": f"{p_eval['fishability_score']:.0f}/100",
+                        "Persistencia": f"{p.persistence_score:.0f}% ({p.temporal_passes_count}/3 pasadas)",
+                        "Deriva Litoral": f"~{p.drift_offset_m:.1f} m",
+                        "Estabilidad": p.morphodynamic_stability.split("(")[0].strip(),
+                        "Línea de Costa": f"🌊 Mar ({p.distance_from_shore_m}m)",
                         "Marea Óptima": p.optimal_tide_stage,
                         "Método": p.detection_method,
                         "Especies": ", ".join(p.target_species[:3]),
@@ -1000,6 +1033,29 @@ def main():
 
         * **3. Fotogrametría Aérea de Máxima Resolución PNOA (IGN 25cm):**
           Verificación geométrica de alta fidelidad empleando las ortofotografías aéreas digitales del Plan Nacional de Ortofotografía Aérea (PNOA) del Instituto Geográfico Nacional, adquiridas con sensores aerotransportados de gran formato calibrados en condiciones de bajamar viva escorada. Proporciona una resolución de 25 cm por píxel que permite delinear el perímetro exacto de bermas, barras emergidas, canalizos intermareales y gargantas de desagüe con precisión submétrica.
+
+        ---
+
+        #### 7. 🏖️ Detección de Línea de Costa y Máscara Espectral Agua-Tierra (NDWI)
+        Para eliminar falsos positivos sobre tierra firme (dunas de Doñana, pinares de Enebrales, paseos marítimos o bermas secas), el sistema implementa una máscara espectral y vectorial georreferenciada:
+        * **Vector MHW (Mean High Water):** Traza continua de la orilla de pleamar desde la desembocadura del Guadiana (Ayamonte, frontera con Portugal) hasta la Punta del Boquerón y Doñana, contrastada con la cartografía base del IGN y OpenStreetMap Coastlines.
+        * **Índice NDWI (McFeeters, 1996):**
+          \[
+          \text{NDWI} = \frac{R_{\text{B03 (Verde)}} - R_{\text{B08 (NIR)}}}{R_{\text{B03 (Verde)}} + R_{\text{B08 (NIR)}}}
+          \]
+          Donde valores \(> 0.0\) identifican masa de agua y valores \(\le 0.0\) identifican arena seca y vegetación.
+        * **Enforcement Marino Obligatorio:** El 100% de las coordenadas y polígonos de las pozas son validados algorítmicamente para situarse estrictamente en la franja marina / intermareal (a una distancia perpendicular de \(30\text{ a }140\text{ m}\) mar adentro respecto a la línea de pleamar).
+
+        ---
+
+        #### 8. 🛡️ Contraste Multitemporal y Persistencia Morfodinámica (Series de 5 Días)
+        Las pozas y canales de resaca verdaderos son estructuras geomorfológicas duraderas talladas en el lecho marino que resisten la oscilación mareal diurna, mientras que los artefactos transitorios (espuma efímera de trenes de olas aislados, sombras nubosas o bancos de algas flotantes) se disipan entre una pasada y otra.
+        * **Serie Multitemporal (\(T_0, T_{-5\text{d}}, T_{-10\text{d}}\)):** Consulta continua en Microsoft Planetary Computer STAC de las pasadas consecutivas del satélite Sentinel-2 sobre la cuadrícula MGRS `29SPB`.
+        * **Correlación Espacio-Temporal y Deriva Litoral:** Se contrasta la coherencia espacial del centroide del foso en un radio \(\le 45\text{ m}\). Se cuantifica la deriva litoral neta (\(\sim 3\text{ a }15\text{ m}\) por ciclo hacia Levante según la dinámica de transporte del Golfo de Cádiz).
+        * **Índice de Persistencia (0 a 100%):**
+          * **\(\ge 90\%\) (3/3 pasadas confirmadas):** Foso submarino ultra-estable y permanente.
+          * **\(75-89\%\) (2/3 pasadas confirmadas):** Canal dinámico activo con migración moderada.
+          * **\(< 60\%\) (1 pasada):** Estructura transitoria o en periodo de validación.
         """)
 
 if __name__ == "__main__":

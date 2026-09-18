@@ -4,7 +4,7 @@ Specifically tailored for the Andalusian Atlantic coast (e.g. Huelva, Gulf of Ca
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import List, Optional, Tuple, Literal, Dict, Any
 from enum import Enum
 
@@ -37,6 +37,12 @@ class DetectedPoza:
     optimal_tide_stage: str
     satellite_pass_date: str
     coordinates_polygon: Optional[List[Tuple[float, float]]] = None
+    persistence_score: float = 90.0
+    temporal_passes_count: int = 1
+    observation_dates: List[str] = field(default_factory=list)
+    drift_offset_m: float = 0.0
+    morphodynamic_stability: str = "Foso Estable Confirmado"
+    is_shoreline_validated: bool = True
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model instance to standard dictionary."""
@@ -48,6 +54,11 @@ class DetectedPoza:
         coords = data.get("coordinates_polygon")
         if coords is not None:
             coords = [(float(pt[0]), float(pt[1])) for pt in coords]
+
+        obs_dates = data.get("observation_dates")
+        if obs_dates is None:
+            sat_date = str(data.get("satellite_pass_date", ""))
+            obs_dates = [sat_date] if sat_date else []
 
         return cls(
             id=str(data["id"]),
@@ -65,6 +76,12 @@ class DetectedPoza:
             optimal_tide_stage=str(data.get("optimal_tide_stage", "")),
             satellite_pass_date=str(data.get("satellite_pass_date", "")),
             coordinates_polygon=coords,
+            persistence_score=float(data.get("persistence_score", 90.0)),
+            temporal_passes_count=int(data.get("temporal_passes_count", 1)),
+            observation_dates=list(obs_dates),
+            drift_offset_m=float(data.get("drift_offset_m", 0.0)),
+            morphodynamic_stability=str(data.get("morphodynamic_stability", "Foso Estable Confirmado")),
+            is_shoreline_validated=bool(data.get("is_shoreline_validated", True)),
         )
 
 

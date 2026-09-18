@@ -27,6 +27,7 @@ HUELVA_BBOX = [-7.45, 36.95, -6.50, 37.30]
 _WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_CACHE_DIR = _WORKSPACE_ROOT / "data" / "satellite_cache"
 DEFAULT_CACHE_FILE = DEFAULT_CACHE_DIR / "sentinel_huelva_metadata.json"
+DEFAULT_SERIES_CACHE_FILE = DEFAULT_CACHE_DIR / "sentinel_huelva_series.json"
 
 
 def get_huelva_coastal_bounds() -> Dict[str, float]:
@@ -74,7 +75,7 @@ def is_cache_fresh(max_age_days: int = 5, cache_path: Optional[Path] = None) -> 
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        cached_at_str = data.get("cached_at")
+        cached_at_str = data.get("cached_at") if isinstance(data, dict) else (data[0].get("cached_at") if data else None)
         if not cached_at_str:
             # Fall back to file modification time
             mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
@@ -88,13 +89,13 @@ def is_cache_fresh(max_age_days: int = 5, cache_path: Optional[Path] = None) -> 
         return False
 
 
-def _generate_mock_sentinel_metadata() -> SentinelPassMetadata:
+def _generate_mock_sentinel_metadata(days_ago: int = 1, cloud_pct: float = 2.92) -> SentinelPassMetadata:
     """
     Generates realistic fallback Sentinel-2 metadata for the Huelva coast (MGRS Tile 29SPB).
     Ensures zero downtime and complete application resilience if STAC API is offline.
     """
     now_utc = datetime.now(timezone.utc)
-    pass_dt = (now_utc - timedelta(days=1, hours=2)).replace(minute=21, second=31, microsecond=0)
+    pass_dt = (now_utc - timedelta(days=days_ago, hours=2)).replace(minute=21, second=31, microsecond=0)
     iso_date = pass_dt.strftime("%Y%m%d")
     iso_time = pass_dt.strftime("%H%M%S")
 
@@ -104,7 +105,7 @@ def _generate_mock_sentinel_metadata() -> SentinelPassMetadata:
     return SentinelPassMetadata(
         scene_id=scene_id,
         datetime=pass_dt.isoformat(),
-        cloud_cover_pct=2.92,
+        cloud_cover_pct=cloud_pct,
         sun_elevation=53.4,
         tile_id="29SPB",
         visual_url=f"{base_blob}/T29SPB_{iso_date}T{iso_time}_TCI_10m.tif",
@@ -114,6 +115,44 @@ def _generate_mock_sentinel_metadata() -> SentinelPassMetadata:
         b08_nir_url=f"{base_blob}/T29SPB_{iso_date}T{iso_time}_B08_10m.tif",
         cached_at=now_utc.isoformat(),
     )
+
+
+def _generate_mock_sentinel_series(passes_count: int = 3) -> list[SentinelPassMetadata]:
+    """Generates a realistic 5-day cadence multi-temporal Sentinel-2 series (T0, T-5d, T-10d)."""
+    series = []
+    cadence_days = [1, 6, 11, 16, 21]
+    clouds = [2.9, 4.1, 1.5, 5.2, 3.8]
+    for i in range(min(passes_count, len(cadence_days))):
+        series.append(_generate_mock_sentinel_metadata(days_ago=cadence_days[i], cloud_pct=clouds[i]))
+    return series
+
+
+def _save_series_to_cache(series: list[SentinelPassMetadata], cache_path: Optional[Path] = None) -> None:
+    """Save multi-pass series metadata to disk in JSON format."""
+    path = cache_path or DEFAULT_SERIES_CACHE_FILE
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump([item.to_dict() for item in series], f, indent=2, ensure_ascii=False)
+        logger.info(f"Saved Sentinel multi-temporal series cache to {path}")
+    except Exception as e:
+        logger.warning(f"Failed to write Sentinel series cache to {path}: {e}")
+
+
+def _load_series_from_cache(cache_path: Optional[Path] = None) -> Optional[list[SentinelPassMetadata]]:
+    """Load multi-pass series metadata from disk cache if present and valid."""
+    path = cache_path or DEFAULT_SERIES_CACHE_FILE
+    if not path.is_file():
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list) and data:
+            return [SentinelPassMetadata.from_dict(d) for d in data]
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to read Sentinel series cache from {path}: {e}")
+        return None
 
 
 def _save_to_cache(metadata: SentinelPassMetadata, cache_path: Optional[Path] = None) -> None:
@@ -142,6 +181,123 @@ def _load_from_cache(cache_path: Optional[Path] = None) -> Optional[SentinelPass
         return None
 
 
+def get_huelva_sentinel_series(
+    passes_count: int = 3,
+    force_refresh: bool = False,
+    cache_path: Optional[Path] = None,
+    timeout_sec: int = 10,
+) -> list[SentinelPassMetadata]:
+    """
+    Retrieves a multi-temporal series of the most recent Sentinel-2 passes over Huelva (MGRS 29SPB),
+    spaced by the satellite's ~5-day revisit cycle. Used to contrast coastal pozas across time.
+
+    Args:
+        passes_count: Number of recent passes to retrieve (default: 3).
+        force_refresh: If True, bypasses cache and queries Planetary Computer STAC.
+        cache_path: Optional custom path for series cache JSON.
+        timeout_sec: Request timeout in seconds.
+
+    Returns:
+        list[SentinelPassMetadata]: Series of SentinelPassMetadata ordered from newest to oldest.
+    """
+    target_cache_path = cache_path or DEFAULT_SERIES_CACHE_FILE
+
+    # 1. Use fresh cache if available
+    if not force_refresh and is_cache_fresh(max_age_days=5, cache_path=target_cache_path):
+        cached_series = _load_series_from_cache(target_cache_path)
+        if cached_series is not None and len(cached_series) >= min(2, passes_count):
+            logger.info("Loaded fresh multi-temporal Sentinel-2 series from cache.")
+            return cached_series[:passes_count]
+
+    # 2. Attempt query to Microsoft Planetary Computer STAC API
+    search_payload = {
+        "collections": ["sentinel-2-l2a"],
+        "bbox": HUELVA_BBOX,
+        "query": {
+            "eo:cloud_cover": {"lt": 20},
+            "s2:mgrs_tile": {"eq": "29SPB"},
+        },
+        "sortby": [{"field": "datetime", "direction": "desc"}],
+        "limit": 15,
+    }
+
+    try:
+        logger.info(f"Querying Planetary Computer STAC for multi-temporal Sentinel-2 series ({passes_count} passes)...")
+        response = requests.post(
+            PLANETARY_COMPUTER_STAC_URL,
+            json=search_payload,
+            headers={"Accept": "application/geo+json"},
+            timeout=timeout_sec,
+        )
+        response.raise_for_status()
+        stac_data = response.json()
+        features = stac_data.get("features", [])
+
+        parsed_series: list[SentinelPassMetadata] = []
+        seen_dates = set()
+
+        for feat in features:
+            props = feat.get("properties", {})
+            dt_str = props.get("datetime", "")
+            date_key = dt_str[:10] if dt_str else ""
+            if date_key in seen_dates:
+                continue
+            seen_dates.add(date_key)
+
+            scene_id = feat.get("id", "S2_UNKNOWN_SCENE")
+            assets = feat.get("assets", {})
+
+            sun_elevation = 55.0
+            if "view:sun_elevation" in props and props["view:sun_elevation"] is not None:
+                sun_elevation = float(props["view:sun_elevation"])
+            elif "s2:mean_solar_zenith" in props and props["s2:mean_solar_zenith"] is not None:
+                sun_elevation = round(90.0 - float(props["s2:mean_solar_zenith"]), 2)
+
+            visual_url = assets.get("visual", {}).get("href")
+            b02_url = assets.get("B02", assets.get("b02", {})).get("href")
+            b03_url = assets.get("B03", assets.get("b03", {})).get("href")
+            b04_url = assets.get("B04", assets.get("b04", {})).get("href")
+            b08_url = assets.get("B08", assets.get("b08", {})).get("href")
+
+            cloud_cover = float(props.get("eo:cloud_cover", 0.0))
+            tile_id = str(props.get("s2:mgrs_tile", "29SPB"))
+
+            meta = SentinelPassMetadata(
+                scene_id=scene_id,
+                datetime=dt_str or datetime.now(timezone.utc).isoformat(),
+                cloud_cover_pct=cloud_cover,
+                sun_elevation=sun_elevation,
+                tile_id=tile_id,
+                visual_url=visual_url,
+                b02_blue_url=b02_url,
+                b03_green_url=b03_url,
+                b04_red_url=b04_url,
+                b08_nir_url=b08_url,
+                cached_at=datetime.now(timezone.utc).isoformat(),
+            )
+            parsed_series.append(meta)
+            if len(parsed_series) >= passes_count:
+                break
+
+        if len(parsed_series) >= 1:
+            _save_series_to_cache(parsed_series, target_cache_path)
+            _save_to_cache(parsed_series[0], DEFAULT_CACHE_FILE)
+            return parsed_series
+
+    except Exception as e:
+        logger.warning(f"Planetary Computer STAC multi-pass query failed ({e}). Using resilient fallback.")
+
+    # 3. Fallback: cached series or mock series
+    existing = _load_series_from_cache(target_cache_path)
+    if existing is not None and len(existing) >= 1:
+        return existing[:passes_count]
+
+    mock_series = _generate_mock_sentinel_series(passes_count)
+    _save_series_to_cache(mock_series, target_cache_path)
+    _save_to_cache(mock_series[0], DEFAULT_CACHE_FILE)
+    return mock_series
+
+
 def get_latest_huelva_sentinel_pass(
     force_refresh: bool = False,
     cache_path: Optional[Path] = None,
@@ -163,93 +319,16 @@ def get_latest_huelva_sentinel_pass(
     Returns:
         SentinelPassMetadata: The latest metadata instance with band URLs and scene parameters.
     """
-    target_cache_path = cache_path or _get_cache_file()
+    series = get_huelva_sentinel_series(
+        passes_count=1,
+        force_refresh=force_refresh,
+        timeout_sec=timeout_sec,
+    )
+    if series:
+        if cache_path:
+            _save_to_cache(series[0], cache_path)
+        return series[0]
 
-    # 1. Use fresh cache if available and not forced to refresh
-    if not force_refresh and is_cache_fresh(max_age_days=5, cache_path=target_cache_path):
-        cached = _load_from_cache(target_cache_path)
-        if cached is not None:
-            logger.info("Loaded fresh Sentinel-2 metadata from cache.")
-            return cached
+    # Fallback to single mock metadata if series was empty
+    return _generate_mock_sentinel_metadata()
 
-    # 2. Attempt query to Microsoft Planetary Computer STAC API
-    search_payload = {
-        "collections": ["sentinel-2-l2a"],
-        "bbox": HUELVA_BBOX,
-        "query": {
-            "eo:cloud_cover": {"lt": 15}
-        },
-        "sortby": [{"field": "datetime", "direction": "desc"}],
-        "limit": 2,
-    }
-
-    try:
-        logger.info(f"Querying Planetary Computer STAC API for Sentinel-2 over Huelva ({HUELVA_BBOX})...")
-        response = requests.post(
-            PLANETARY_COMPUTER_STAC_URL,
-            json=search_payload,
-            headers={"Accept": "application/geo+json"},
-            timeout=timeout_sec,
-        )
-        response.raise_for_status()
-        stac_data = response.json()
-        features = stac_data.get("features", [])
-
-        if features:
-            feature = features[0]
-            scene_id = feature.get("id", "S2_UNKNOWN_SCENE")
-            props = feature.get("properties", {})
-            assets = feature.get("assets", {})
-
-            # Calculate sun elevation: view:sun_elevation or (90 - s2:mean_solar_zenith)
-            sun_elevation = 55.0
-            if "view:sun_elevation" in props and props["view:sun_elevation"] is not None:
-                sun_elevation = float(props["view:sun_elevation"])
-            elif "s2:mean_solar_zenith" in props and props["s2:mean_solar_zenith"] is not None:
-                sun_elevation = round(90.0 - float(props["s2:mean_solar_zenith"]), 2)
-
-            # Band URLs (B02: Blue, B03: Green, B04: Red, B08: NIR, visual: TCI)
-            visual_url = assets.get("visual", {}).get("href")
-            b02_url = assets.get("B02", assets.get("b02", {})).get("href")
-            b03_url = assets.get("B03", assets.get("b03", {})).get("href")
-            b04_url = assets.get("B04", assets.get("b04", {})).get("href")
-            b08_url = assets.get("B08", assets.get("b08", {})).get("href")
-
-            cloud_cover = float(props.get("eo:cloud_cover", 0.0))
-            tile_id = str(props.get("s2:mgrs_tile", "29SPB"))
-            dt_str = props.get("datetime", datetime.now(timezone.utc).isoformat())
-
-            metadata = SentinelPassMetadata(
-                scene_id=scene_id,
-                datetime=dt_str,
-                cloud_cover_pct=cloud_cover,
-                sun_elevation=sun_elevation,
-                tile_id=tile_id,
-                visual_url=visual_url,
-                b02_blue_url=b02_url,
-                b03_green_url=b03_url,
-                b04_red_url=b04_url,
-                b08_nir_url=b08_url,
-                cached_at=datetime.now(timezone.utc).isoformat(),
-            )
-
-            # Cache the newly fetched metadata
-            _save_to_cache(metadata, target_cache_path)
-            return metadata
-        else:
-            logger.warning("No Sentinel-2 scenes matched criteria in STAC search. Evaluating fallback.")
-
-    except Exception as e:
-        logger.warning(f"Planetary Computer STAC request failed ({e}). Proceeding to fallback.")
-
-    # 3. Fallback: check existing cache regardless of age
-    existing_cache = _load_from_cache(target_cache_path)
-    if existing_cache is not None:
-        logger.info("Using existing (stale) cache as fallback.")
-        return existing_cache
-
-    # 4. Fallback: generate realistic synthetic metadata and populate cache
-    logger.info("Generating realistic mock Sentinel-2 pass metadata for resilience.")
-    mock_meta = _generate_mock_sentinel_metadata()
-    _save_to_cache(mock_meta, target_cache_path)
-    return mock_meta

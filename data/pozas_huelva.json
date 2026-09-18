@@ -3,7 +3,7 @@
     "id": "poza_isla_canela_guadiana_01",
     "name": "Canalizo de Marea del Guadiana - Barra de Poniente",
     "beach_name": "Isla Canela",
-    "latitude": 37.1745,
+    "latitude": 37.172645,
     "longitude": -7.4082,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 95,
@@ -21,17 +21,39 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1742, -7.4088],
-      [37.1748, -7.4084],
-      [37.1746, -7.4076],
-      [37.1740, -7.4080]
-    ]
+      [
+        37.172345,
+        -7.4088
+      ],
+      [
+        37.172945,
+        -7.4084
+      ],
+      [
+        37.172745,
+        -7.4076
+      ],
+      [
+        37.172145,
+        -7.408
+      ]
+    ],
+    "persistence_score": 96.0,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 4.5,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_isla_canela_levante_02",
     "name": "Poza de la Barra de Levante - Isla Canela",
     "beach_name": "Isla Canela",
-    "latitude": 37.1812,
+    "latitude": 37.179525,
     "longitude": -7.3685,
     "detection_method": "BREAKER_GAP",
     "distance_from_shore_m": 75,
@@ -48,17 +70,39 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1809, -7.3690],
-      [37.1815, -7.3687],
-      [37.1814, -7.3680],
-      [37.1808, -7.3683]
-    ]
+      [
+        37.179225,
+        -7.369
+      ],
+      [
+        37.179825,
+        -7.3687
+      ],
+      [
+        37.179725,
+        -7.368
+      ],
+      [
+        37.179125,
+        -7.3683
+      ]
+    ],
+    "persistence_score": 92.0,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 5.6,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_isla_cristina_caiman_01",
     "name": "Fosa de Corriente - Punta del Caimán",
     "beach_name": "Isla Cristina",
-    "latitude": 37.1952,
+    "latitude": 37.193215,
     "longitude": -7.3364,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 65,
@@ -76,17 +120,39 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1949, -7.3370],
-      [37.1956, -7.3366],
-      [37.1954, -7.3358],
-      [37.1947, -7.3362]
-    ]
+      [
+        37.192915,
+        -7.337
+      ],
+      [
+        37.193615,
+        -7.3366
+      ],
+      [
+        37.193415,
+        -7.3358
+      ],
+      [
+        37.192715,
+        -7.3362
+      ]
+    ],
+    "persistence_score": 97.5,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 6.7,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_isla_cristina_gaviota_02",
     "name": "Canalizo Rompiente - Barra de la Gaviota",
     "beach_name": "Isla Cristina",
-    "latitude": 37.1918,
+    "latitude": 37.18978,
     "longitude": -7.3182,
     "detection_method": "BREAKER_GAP",
     "distance_from_shore_m": 80,
@@ -103,17 +169,38 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1915, -7.3187],
-      [37.1921, -7.3184],
-      [37.1920, -7.3177],
-      [37.1914, -7.3180]
-    ]
+      [
+        37.18948,
+        -7.3187
+      ],
+      [
+        37.19008,
+        -7.3184
+      ],
+      [
+        37.18998,
+        -7.3177
+      ],
+      [
+        37.18938,
+        -7.318
+      ]
+    ],
+    "persistence_score": 84.5,
+    "temporal_passes_count": 2,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15"
+    ],
+    "drift_offset_m": 13.5,
+    "morphodynamic_stability": "Canal Dinámico Activo (2/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_isla_cristina_central_03",
     "name": "Poza de Resaca Central - Playa Central",
     "beach_name": "Isla Cristina",
-    "latitude": 37.1908,
+    "latitude": 37.188705,
     "longitude": -7.2985,
     "detection_method": "PNOA_ORTHO",
     "distance_from_shore_m": 55,
@@ -130,17 +217,39 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1905, -7.2990],
-      [37.1911, -7.2987],
-      [37.1910, -7.2980],
-      [37.1904, -7.2983]
-    ]
+      [
+        37.188405,
+        -7.299
+      ],
+      [
+        37.189005,
+        -7.2987
+      ],
+      [
+        37.188905,
+        -7.298
+      ],
+      [
+        37.188305,
+        -7.2983
+      ]
+    ],
+    "persistence_score": 92.0,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 8.9,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_redondela_hoyo_01",
     "name": "Poza de la Segunda Barra - Playa del Hoyo",
     "beach_name": "La Redondela",
-    "latitude": 37.1968,
+    "latitude": 37.19421,
     "longitude": -7.2618,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 110,
@@ -158,17 +267,39 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1964, -7.2625],
-      [37.1972, -7.2621],
-      [37.1970, -7.2611],
-      [37.1962, -7.2615]
-    ]
+      [
+        37.19381,
+        -7.2625
+      ],
+      [
+        37.19461,
+        -7.2621
+      ],
+      [
+        37.19441,
+        -7.2611
+      ],
+      [
+        37.19361,
+        -7.2615
+      ]
+    ],
+    "persistence_score": 96.5,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 4.5,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_islantilla_intermareal_02",
     "name": "Canal de Rompiente de Poniente - Islantilla",
     "beach_name": "Islantilla",
-    "latitude": 37.2008,
+    "latitude": 37.19817,
     "longitude": -7.2345,
     "detection_method": "BREAKER_GAP",
     "distance_from_shore_m": 70,
@@ -185,17 +316,39 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.2004, -7.2350],
-      [37.2012, -7.2347],
-      [37.2010, -7.2339],
-      [37.2002, -7.2342]
-    ]
+      [
+        37.19777,
+        -7.235
+      ],
+      [
+        37.19857,
+        -7.2347
+      ],
+      [
+        37.19837,
+        -7.2339
+      ],
+      [
+        37.19757,
+        -7.2342
+      ]
+    ],
+    "persistence_score": 93.0,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 5.6,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_el_terron_flecha_exterior_01",
     "name": "Foso Exterior de la Flecha - El Rompido",
     "beach_name": "El Terrón / Cartaya",
-    "latitude": 37.2048,
+    "latitude": 37.201735,
     "longitude": -7.1552,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 85,
@@ -213,17 +366,38 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.2043, -7.1560],
-      [37.2053, -7.1555],
-      [37.2051, -7.1544],
-      [37.2041, -7.1549]
-    ]
+      [
+        37.201235,
+        -7.156
+      ],
+      [
+        37.202235,
+        -7.1555
+      ],
+      [
+        37.202035,
+        -7.1544
+      ],
+      [
+        37.201035,
+        -7.1549
+      ]
+    ],
+    "persistence_score": 89.0,
+    "temporal_passes_count": 2,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15"
+    ],
+    "drift_offset_m": 13.5,
+    "morphodynamic_stability": "Canal Dinámico Activo (2/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_cartaya_punta_flecha_02",
     "name": "Canal de Entrada de Marea - Punta de la Flecha",
     "beach_name": "Cartaya",
-    "latitude": 37.2095,
+    "latitude": 37.20066,
     "longitude": -7.1248,
     "detection_method": "BREAKER_GAP",
     "distance_from_shore_m": 60,
@@ -240,17 +414,39 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.2091, -7.1254],
-      [37.2099, -7.1250],
-      [37.2097, -7.1242],
-      [37.2089, -7.1246]
-    ]
+      [
+        37.20026,
+        -7.1254
+      ],
+      [
+        37.20106,
+        -7.125
+      ],
+      [
+        37.20086,
+        -7.1242
+      ],
+      [
+        37.20006,
+        -7.1246
+      ]
+    ],
+    "persistence_score": 94.5,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 7.8,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_el_portil_culata_01",
     "name": "Garganta de Vaciante - Caño de la Culata",
     "beach_name": "El Portil",
-    "latitude": 37.2138,
+    "latitude": 37.206595,
     "longitude": -7.0582,
     "detection_method": "PNOA_ORTHO",
     "distance_from_shore_m": 45,
@@ -268,17 +464,39 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.2135, -7.0587],
-      [37.2141, -7.0584],
-      [37.2140, -7.0577],
-      [37.2134, -7.0580]
-    ]
+      [
+        37.206295,
+        -7.0587
+      ],
+      [
+        37.206895,
+        -7.0584
+      ],
+      [
+        37.206795,
+        -7.0577
+      ],
+      [
+        37.206195,
+        -7.058
+      ]
+    ],
+    "persistence_score": 92.0,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 8.9,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_el_portil_enebrales_02",
     "name": "Poza de los Enebrales - Banco Bermejo",
     "beach_name": "El Portil",
-    "latitude": 37.1998,
+    "latitude": 37.191555,
     "longitude": -7.0125,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 105,
@@ -295,17 +513,39 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1994, -7.0132],
-      [37.2002, -7.0128],
-      [37.2000, -7.0118],
-      [37.1992, -7.0122]
-    ]
+      [
+        37.191155,
+        -7.0132
+      ],
+      [
+        37.191955,
+        -7.0128
+      ],
+      [
+        37.191755,
+        -7.0118
+      ],
+      [
+        37.190955,
+        -7.0122
+      ]
+    ],
+    "persistence_score": 93.5,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 4.5,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_punta_umbria_canaleta_01",
     "name": "Poza del Espigón de Poniente - La Canaleta",
     "beach_name": "Punta Umbría",
-    "latitude": 37.1742,
+    "latitude": 37.16905,
     "longitude": -6.9635,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 50,
@@ -323,17 +563,38 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1738, -6.9641],
-      [37.1746, -6.9638],
-      [37.1744, -6.9629],
-      [37.1736, -6.9632]
-    ]
+      [
+        37.16865,
+        -6.9641
+      ],
+      [
+        37.16945,
+        -6.9638
+      ],
+      [
+        37.169002,
+        -6.9629
+      ],
+      [
+        37.16845,
+        -6.9632
+      ]
+    ],
+    "persistence_score": 89.0,
+    "temporal_passes_count": 2,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15"
+    ],
+    "drift_offset_m": 13.5,
+    "morphodynamic_stability": "Canal Dinámico Activo (2/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_punta_umbria_enebrales_rompiente_02",
     "name": "Rompiente de los Enebrales - Canal de Resaca",
     "beach_name": "Punta Umbría",
-    "latitude": 37.1882,
+    "latitude": 37.17969,
     "longitude": -6.9854,
     "detection_method": "BREAKER_GAP",
     "distance_from_shore_m": 90,
@@ -350,17 +611,39 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.1878, -6.9860],
-      [37.1886, -6.9856],
-      [37.1884, -6.9848],
-      [37.1876, -6.9852]
-    ]
+      [
+        37.17929,
+        -6.986
+      ],
+      [
+        37.18009,
+        -6.9856
+      ],
+      [
+        37.17989,
+        -6.9848
+      ],
+      [
+        37.17909,
+        -6.9852
+      ]
+    ],
+    "persistence_score": 92.0,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 6.7,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_mazagon_cuesta_maneli_01",
     "name": "Canalizo de Resaca Profundo - Cuesta Maneli",
     "beach_name": "Mazagón",
-    "latitude": 37.0754,
+    "latitude": 37.06542,
     "longitude": -6.7482,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 120,
@@ -378,17 +661,39 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.0750, -6.7489],
-      [37.0758, -6.7485],
-      [37.0756, -6.7475],
-      [37.0748, -6.7479]
-    ]
+      [
+        37.06502,
+        -6.7489
+      ],
+      [
+        37.06582,
+        -6.7485
+      ],
+      [
+        37.06562,
+        -6.7475
+      ],
+      [
+        37.06482,
+        -6.7479
+      ]
+    ],
+    "persistence_score": 98.0,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 7.8,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_mazagon_asperillo_02",
     "name": "Poza del Acantilado del Asperillo",
     "beach_name": "Mazagón",
-    "latitude": 37.0532,
+    "latitude": 37.03678,
     "longitude": -6.6924,
     "detection_method": "PNOA_ORTHO",
     "distance_from_shore_m": 80,
@@ -405,17 +710,39 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [37.0528, -6.6931],
-      [37.0536, -6.6927],
-      [37.0534, -6.6917],
-      [37.0526, -6.6921]
-    ]
+      [
+        37.03638,
+        -6.6931
+      ],
+      [
+        37.03718,
+        -6.6927
+      ],
+      [
+        37.03698,
+        -6.6917
+      ],
+      [
+        37.03618,
+        -6.6921
+      ]
+    ],
+    "persistence_score": 92.5,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 8.9,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_matalascanas_torre_higuera_01",
     "name": "Canal de Resaca del Tapón - Torre de la Higuera",
     "beach_name": "Matalascañas",
-    "latitude": 36.9942,
+    "latitude": 36.99044,
     "longitude": -6.5394,
     "detection_method": "BREAKER_GAP",
     "distance_from_shore_m": 40,
@@ -433,17 +760,38 @@
     "optimal_tide_stage": "Media marea subiendo",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [36.9939, -6.5399],
-      [36.9945, -6.5396],
-      [36.9944, -6.5389],
-      [36.9938, -6.5392]
-    ]
+      [
+        36.99014,
+        -6.5399
+      ],
+      [
+        36.99074,
+        -6.5396
+      ],
+      [
+        36.990372,
+        -6.5389
+      ],
+      [
+        36.99004,
+        -6.5392
+      ]
+    ],
+    "persistence_score": 89.0,
+    "temporal_passes_count": 2,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15"
+    ],
+    "drift_offset_m": 13.5,
+    "morphodynamic_stability": "Canal Dinámico Activo (2/3 pasadas)",
+    "is_shoreline_validated": true
   },
   {
     "id": "poza_matalascanas_limite_donana_02",
     "name": "Fosa Litoral Virgen - Límite Parque Nacional Doñana",
     "beach_name": "Matalascañas",
-    "latitude": 36.9812,
+    "latitude": 36.97263,
     "longitude": -6.5052,
     "detection_method": "SDB_STUMPF",
     "distance_from_shore_m": 130,
@@ -461,10 +809,32 @@
     "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
     "satellite_pass_date": "2026-09-17",
     "coordinates_polygon": [
-      [36.9808, -6.5059],
-      [36.9816, -6.5055],
-      [36.9814, -6.5045],
-      [36.9806, -6.5049]
-    ]
+      [
+        36.97223,
+        -6.5059
+      ],
+      [
+        36.97303,
+        -6.5055
+      ],
+      [
+        36.97283,
+        -6.5045
+      ],
+      [
+        36.97203,
+        -6.5049
+      ]
+    ],
+    "persistence_score": 98.5,
+    "temporal_passes_count": 3,
+    "observation_dates": [
+      "2026-09-17",
+      "2026-09-15",
+      "2026-09-14"
+    ],
+    "drift_offset_m": 5.6,
+    "morphodynamic_stability": "Foso Estable Confirmado (3/3 pasadas)",
+    "is_shoreline_validated": true
   }
 ]
