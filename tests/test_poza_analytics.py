@@ -278,6 +278,25 @@ class TestPozaAnalytics(unittest.TestCase):
         stumpf_synced = next(p for p in synced if p.id == stumpf_original.id)
         self.assertGreaterEqual(stumpf_synced.confidence_score, stumpf_original.confidence_score)
 
+    def test_evaluate_poza_fishability_resilience_to_none(self):
+        """Verify evaluate_poza_fishability safely handles None and irregular types without raising TypeError."""
+        p0 = self.pozas[0]
+        res = evaluate_poza_fishability(
+            poza=p0,
+            tide_state_name=None,
+            tide_coeff=None,
+            wave_height_m=None,
+            current_speed_knots=None,
+        )
+        self.assertIsInstance(res, dict)
+        self.assertIn("fishability_score", res)
+        self.assertIsInstance(res["fishability_score"], float)
+        self.assertGreaterEqual(res["fishability_score"], 0.0)
+        self.assertLessEqual(res["fishability_score"], 100.0)
+        self.assertIn("recommended_lead_g", res)
+        self.assertIn("recommended_baits", res)
+        self.assertIn("activity_summary", res)
+
 
 if __name__ == "__main__":
     unittest.main()

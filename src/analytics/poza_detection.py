@@ -108,10 +108,10 @@ def compute_stumpf_sdb_ratio(
 
 def evaluate_poza_fishability(
     poza: DetectedPoza,
-    tide_state_name: str,
-    tide_coeff: float,
-    wave_height_m: float,
-    current_speed_knots: float,
+    tide_state_name: Optional[str] = "Pleamar",
+    tide_coeff: Optional[float] = 75.0,
+    wave_height_m: Optional[float] = 0.8,
+    current_speed_knots: Optional[float] = 1.0,
 ) -> Dict[str, Any]:
     """
     Evaluates current tactical fishability of a coastal poza/channel based on real-time
@@ -133,8 +133,8 @@ def evaluate_poza_fishability(
             - 'is_optimal_now': bool
     """
     # 1. Tide Alignment Factor (0 to 35 points)
-    tide_curr = (tide_state_name or "").strip().lower()
-    tide_opt = (poza.optimal_tide_stage or "").strip().lower()
+    tide_curr = str(tide_state_name or "Pleamar").strip().lower()
+    tide_opt = str(poza.optimal_tide_stage or "").strip().lower()
 
     tide_score = 15.0  # Base score for active tide movement
 
@@ -166,7 +166,11 @@ def evaluate_poza_fishability(
     # 2. Tide Coefficient Factor (0 to 25 points)
     # Andalusian Atlantic surfcasting benefits from vigorous tidal currents (65 - 95 coeff)
     # which scour channels and transport worms/crabs, without being unmanageably violent (>105).
-    coeff = float(tide_coeff)
+    try:
+        coeff = float(tide_coeff if tide_coeff is not None else 75.0)
+    except (TypeError, ValueError):
+        coeff = 75.0
+
     if 70.0 <= coeff <= 95.0:
         coeff_score = 25.0
     elif 55.0 <= coeff < 70.0 or 95.0 < coeff <= 105.0:
@@ -180,7 +184,11 @@ def evaluate_poza_fishability(
 
     # 3. Wave Breaker Energy Factor (0 to 25 points)
     # 0.4 - 1.2m is ideal for holding and feeding inside troughs behind the sandbars
-    wave_h = max(0.0, float(wave_height_m))
+    try:
+        wave_h = max(0.0, float(wave_height_m if wave_height_m is not None else 0.8))
+    except (TypeError, ValueError):
+        wave_h = 0.8
+
     if 0.5 <= wave_h <= 1.3:
         wave_score = 25.0
     elif 0.3 <= wave_h < 0.5:
@@ -195,7 +203,11 @@ def evaluate_poza_fishability(
         wave_score = 14.0  # Flat calm (<0.3m), water too clear in daytime
 
     # 4. Littoral Current Speed Factor (0 to 15 points)
-    current_kn = max(0.0, float(current_speed_knots))
+    try:
+        current_kn = max(0.0, float(current_speed_knots if current_speed_knots is not None else 1.0))
+    except (TypeError, ValueError):
+        current_kn = 1.0
+
     if 0.4 <= current_kn <= 1.6:
         current_score = 15.0
     elif 0.1 <= current_kn < 0.4:
@@ -211,9 +223,9 @@ def evaluate_poza_fishability(
     raw_score = tide_score + coeff_score + wave_score + current_score
 
     # Minor structural bonus (+2 points for deep well-defined pozas > 2.0m depth)
-    if poza.relative_depth_m >= 2.0:
+    if poza.relative_depth_m is not None and poza.relative_depth_m >= 2.0:
         raw_score += 2.0
-    if poza.confidence_score >= 95.0:
+    if poza.confidence_score is not None and poza.confidence_score >= 95.0:
         raw_score += 1.0
 
     # Penalties for extreme sea states
@@ -292,7 +304,7 @@ def evaluate_poza_fishability(
         )
     else:
         activity_summary = (
-            f"Actividad moderada ({fishability_score}/100): La poza se encuentra en {tide_state_name}, "
+            f"Actividad moderada ({fishability_score}/100): La poza se encuentra en {tide_state_name or 'marea intermedia'}, "
             f"fuera de su ventana pico ({poza.optimal_tide_stage}). Posibles capturas selectivas a media distancia."
         )
 

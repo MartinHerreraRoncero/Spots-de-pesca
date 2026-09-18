@@ -283,6 +283,26 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
         for sp in poza.target_species[:2]:
             self.assertIn(sp, html)
 
+    def test_map_rendering_resilience_to_none_and_kwargs(self):
+        """Tests that map creation succeeds even if environmental arguments are None or extra kwargs exist."""
+        pozas = load_pozas_from_json()
+        f0 = get_spot_hourly_forecast(self.test_spot, forecast_days=1)[0]
+        m = create_andalucia_fishing_map(
+            spots_data=[(self.test_spot, f0)],
+            selected_spot_id=self.test_spot.id,
+            subzone_filter="Costa de Huelva",
+            pozas_data=pozas,
+            show_pozas=True,
+            current_tide_name=None,
+            current_tide_coeff=None,
+            current_wave_h=None,
+            current_knots=None,
+            arbitrary_extra_kwarg="safe",
+        )
+        self.assertIsNotNone(m)
+        rendered = m.get_root().render()
+        self.assertGreater(len(rendered), 1000)
+
     def test_app_py_syntax(self):
         """Verifies app.py compiles cleanly without SyntaxErrors."""
         import py_compile

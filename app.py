@@ -15,6 +15,7 @@ Incluye:
 from __future__ import annotations
 from datetime import datetime, timezone, timedelta
 from typing import List, Tuple, Optional, Dict, Any
+import inspect
 import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
@@ -522,10 +523,31 @@ def main():
 
         # Reference environmental conditions for pozas fishability evaluation
         ref_fc = spots_snapshot[0][1] if spots_snapshot else None
-        curr_tide_name = ref_fc.score.tide_state.state_name if ref_fc else "Pleamar"
-        curr_tide_coeff = float(ref_fc.score.tide_state.coefficient) if ref_fc else 75.0
-        curr_wave_h = float(ref_fc.marine.wave_height) if ref_fc else 0.8
-        curr_knots = float(ref_fc.marine.current_velocity_knots) if ref_fc else 1.0
+        
+        curr_tide_name = "Pleamar"
+        if ref_fc and ref_fc.score and ref_fc.score.tide_state and ref_fc.score.tide_state.state_name:
+            curr_tide_name = str(ref_fc.score.tide_state.state_name)
+
+        curr_tide_coeff = 75.0
+        if ref_fc and ref_fc.score and ref_fc.score.tide_state and ref_fc.score.tide_state.coefficient is not None:
+            try:
+                curr_tide_coeff = float(ref_fc.score.tide_state.coefficient)
+            except (TypeError, ValueError):
+                curr_tide_coeff = 75.0
+
+        curr_wave_h = 0.8
+        if ref_fc and ref_fc.marine and ref_fc.marine.wave_height is not None:
+            try:
+                curr_wave_h = float(ref_fc.marine.wave_height)
+            except (TypeError, ValueError):
+                curr_wave_h = 0.8
+
+        curr_knots = 1.0
+        if ref_fc and ref_fc.marine and ref_fc.marine.current_velocity_knots is not None:
+            try:
+                curr_knots = float(ref_fc.marine.current_velocity_knots)
+            except (TypeError, ValueError):
+                curr_knots = 1.0
 
         if show_pozas:
             pass_date = sentinel_meta.datetime.split("T")[0] if "T" in sentinel_meta.datetime else sentinel_meta.datetime[:10]
@@ -536,22 +558,33 @@ def main():
                 f"Haz clic en las balizas y polígonos delimitados para consultar desnivel, distancia de lance y score actual.{link_html}"
             )
 
-        folium_map = create_andalucia_fishing_map(
-            spots_data=spots_snapshot,
-            selected_spot_id=selected_spot.id if selected_spot and not st.session_state["custom_spot_coords"] else None,
-            subzone_filter=selected_subzone_key,
-            custom_spot_data=custom_spot_forecast_tuple,
-            buoys_data=buoys_telemetry,
-            rivers_data=all_rivers,
-            score_mode=selected_species_mode,
-            highlight_hotspots=filter_hotspots_only,
-            pozas_data=filtered_pozas,
-            show_pozas=show_pozas,
-            current_tide_name=curr_tide_name,
-            current_tide_coeff=curr_tide_coeff,
-            current_wave_h=curr_wave_h,
-            current_knots=curr_knots,
-        )
+        map_kwargs = {
+            "spots_data": spots_snapshot,
+            "selected_spot_id": selected_spot.id if selected_spot and not st.session_state["custom_spot_coords"] else None,
+            "subzone_filter": selected_subzone_key,
+            "custom_spot_data": custom_spot_forecast_tuple,
+            "buoys_data": buoys_telemetry,
+            "rivers_data": all_rivers,
+            "score_mode": selected_species_mode,
+            "highlight_hotspots": filter_hotspots_only,
+            "pozas_data": filtered_pozas,
+            "show_pozas": show_pozas,
+            "current_tide_name": curr_tide_name,
+            "current_tide_coeff": curr_tide_coeff,
+            "current_wave_h": curr_wave_h,
+            "current_knots": curr_knots,
+        }
+
+        # Filter kwargs defensively against module cache skew in Streamlit Cloud hot-reloads
+        try:
+            sig = inspect.signature(create_andalucia_fishing_map)
+            has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+            if not has_varkw:
+                map_kwargs = {k: v for k, v in map_kwargs.items() if k in sig.parameters}
+        except Exception:
+            pass
+
+        folium_map = create_andalucia_fishing_map(**map_kwargs)
 
         map_output = st_folium(
             folium_map,

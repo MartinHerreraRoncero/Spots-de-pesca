@@ -321,9 +321,12 @@ def render_poza_popup_html(poza: DetectedPoza, eval_res: Dict[str, Any]) -> str:
     }
     method_name = method_labels.get(poza.detection_method, poza.detection_method)
 
-    score = eval_res.get("fishability_score", 70.0)
+    try:
+        score = float(eval_res.get("fishability_score", 70.0) if eval_res.get("fishability_score") is not None else 70.0)
+    except (TypeError, ValueError):
+        score = 70.0
     score_color = get_score_color(score)
-    is_optimal = eval_res.get("is_optimal_now", False)
+    is_optimal = bool(eval_res.get("is_optimal_now", False))
     optimal_badge = (
         "<span style='background-color:#10b981; color:white; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700;'>⚡ MOMENTO ÓPTIMO</span>"
         if is_optimal
@@ -417,10 +420,12 @@ def create_andalucia_fishing_map(
     highlight_hotspots: bool = False,
     pozas_data: Optional[List[DetectedPoza]] = None,
     show_pozas: bool = True,
-    current_tide_name: str = "Pleamar",
-    current_tide_coeff: float = 75.0,
-    current_wave_h: float = 0.8,
-    current_knots: float = 1.0,
+    current_tide_name: Optional[str] = "Pleamar",
+    current_tide_coeff: Optional[float] = 75.0,
+    current_wave_h: Optional[float] = 0.8,
+    current_knots: Optional[float] = 1.0,
+    *args,
+    **kwargs,
 ) -> folium.Map:
     """
     Generates Folium map of Andalusia with multi-species score coloring,
@@ -710,13 +715,27 @@ def create_andalucia_fishing_map(
 
     # Render Detected Coastal Pozas & Channels Layer
     if pozas_data:
+        tide_name_safe = str(current_tide_name or "Pleamar")
+        try:
+            tide_coeff_safe = float(current_tide_coeff if current_tide_coeff is not None else 75.0)
+        except (TypeError, ValueError):
+            tide_coeff_safe = 75.0
+        try:
+            wave_h_safe = float(current_wave_h if current_wave_h is not None else 0.8)
+        except (TypeError, ValueError):
+            wave_h_safe = 0.8
+        try:
+            knots_safe = float(current_knots if current_knots is not None else 1.0)
+        except (TypeError, ValueError):
+            knots_safe = 1.0
+
         for poza in pozas_data:
             eval_res = evaluate_poza_fishability(
                 poza=poza,
-                tide_state_name=current_tide_name,
-                tide_coeff=current_tide_coeff,
-                wave_height_m=current_wave_h,
-                current_speed_knots=current_knots,
+                tide_state_name=tide_name_safe,
+                tide_coeff=tide_coeff_safe,
+                wave_height_m=wave_h_safe,
+                current_speed_knots=knots_safe,
             )
 
             # Draw polygon if coordinates_polygon exists
@@ -764,10 +783,15 @@ def create_andalucia_fishing_map(
             """
 
             popup_html = render_poza_popup_html(poza, eval_res)
+            try:
+                poza_fscore = float(eval_res.get("fishability_score", 70.0) if eval_res.get("fishability_score") is not None else 70.0)
+            except (TypeError, ValueError):
+                poza_fscore = 70.0
+
             tooltip_html = (
                 f"<b>🌊 {poza.name}</b> ({poza.beach_name})<br>"
                 f"Lance: <b>{poza.distance_from_shore_m}m</b> | Foso: <b>+{poza.relative_depth_m}m</b><br>"
-                f"Score Pesca: <b>{eval_res['fishability_score']:.0f}/100</b>"
+                f"Score Pesca: <b>{poza_fscore:.0f}/100</b>"
             )
 
             folium.Marker(
