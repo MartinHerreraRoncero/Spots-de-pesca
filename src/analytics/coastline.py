@@ -179,30 +179,72 @@ def project_seaward_point(
     return (round(target_lat, 6), round(lon, 6))
 
 
+def get_shoreline_normal_azimuth(lon: float) -> float:
+    """
+    Calculates the deterministic nautical azimuth (degrees, 0-360°) of the shoreline normal
+    vector pointing seaward (into the Atlantic Ocean) at the specified longitude along Costa de Huelva.
+
+    Based on the tangent vector between adjacent curated shoreline vertices:
+    dx = (lon1 - lon0) * 111320 * cos(lat_mean)
+    dy = (lat1 - lat0) * 111139
+    theta_tangent = atan2(dx, dy)
+    theta_normal = (theta_tangent + 90°) % 360°
+
+    Args:
+        lon: Longitude in degrees.
+
+    Returns:
+        float: Seaward normal azimuth in degrees (e.g. ~165° to ~226° along Huelva).
+    """
+    verts = HUELVA_SHORELINE_VERTICES
+    if lon <= verts[0][0]:
+        idx = 0
+    elif lon >= verts[-2][0]:
+        idx = len(verts) - 2
+    else:
+        idx = 0
+        for i in range(len(verts) - 1):
+            if verts[i][0] <= lon <= verts[i + 1][0]:
+                idx = i
+                break
+
+    lon0, lat0 = verts[idx]
+    lon1, lat1 = verts[idx + 1]
+
+    lat_avg = math.radians((lat0 + lat1) / 2.0)
+    dx = (lon1 - lon0) * 111320.0 * math.cos(lat_avg)
+    dy = (lat1 - lat0) * 111139.0
+
+    tangent_deg = math.degrees(math.atan2(dx, dy)) % 360.0
+    # Shoreline proceeds West-to-East (~75° to ~135°). Seaward points to the right (South):
+    normal_deg = (tangent_deg + 90.0) % 360.0
+    return round(normal_deg, 1)
+
+
 def enforce_marine_bounds(
     poza: DetectedPoza,
-    min_dist_m: float = 30.0,
-    max_dist_m: float = 140.0,
+    min_dist_m: float = 20.0,
+    max_dist_m: float = 130.0,
 ) -> DetectedPoza:
     """
-    Validates that a DetectedPoza is located in the marine water zone.
+    Validates that a DetectedPoza is located in the marine water zone (range 20 to 130 meters).
     If the poza center or its polygon vertices fall on land (lat >= shore_lat),
-    they are automatically snapped seaward into the surf zone.
+    or outside the designated 20-130m surf zone, they are automatically snapped seaward into the surf zone.
 
     Args:
         poza: DetectedPoza instance to inspect and enforce.
-        min_dist_m: Minimum allowed distance seaward from shoreline (default: 30m).
-        max_dist_m: Maximum allowed distance seaward from shoreline (default: 140m).
+        min_dist_m: Minimum allowed distance seaward from shoreline (default: 20m).
+        max_dist_m: Maximum allowed distance seaward from shoreline (default: 130m).
 
     Returns:
-        DetectedPoza: Validated instance with guaranteed marine coordinates and
-                      `is_shoreline_validated = True`.
+        DetectedPoza: Validated instance with guaranteed marine coordinates in [20, 130]m
+                      and `is_shoreline_validated = True`.
     """
     curr_dist = calculate_distance_to_shore_m(poza.latitude, poza.longitude)
 
-    # Determine desired distance within surfcasting range
-    if curr_dist < min_dist_m:
-        target_dist = float(poza.distance_from_shore_m or 75.0)
+    # Determine desired distance within surfcasting range [20m, 130m]
+    if curr_dist < min_dist_m or curr_dist > max_dist_m:
+        target_dist = float(poza.distance_from_shore_m or 65.0)
         target_dist = max(min_dist_m, min(max_dist_m, target_dist))
         new_lat, new_lon = project_seaward_point(poza.latitude, poza.longitude, target_distance_m=target_dist)
         lat_shift = new_lat - poza.latitude
@@ -211,7 +253,7 @@ def enforce_marine_bounds(
     else:
         new_lat, new_lon = poza.latitude, poza.longitude
         lat_shift, lon_shift = 0.0, 0.0
-        enforced_dist = poza.distance_from_shore_m
+        enforced_dist = int(round(curr_dist))
 
     # Shift polygon vertices accordingly if present
     new_polygon = None

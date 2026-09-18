@@ -11,6 +11,7 @@ from src.analytics.coastline import (
     compute_ndwi,
     compute_mndwi,
     get_shoreline_lat_at_lon,
+    get_shoreline_normal_azimuth,
     is_in_ocean,
     calculate_distance_to_shore_m,
     project_seaward_point,
@@ -21,6 +22,7 @@ from src.analytics.coastline import (
 from src.analytics.poza_detection import (
     load_pozas_from_json,
     filter_pozas,
+    calculate_deterministic_littoral_drift,
     contrast_multi_temporal_pozas,
 )
 from src.fetchers.sentinel_satellite import (
@@ -130,8 +132,8 @@ class TestCoastlineModule(unittest.TestCase):
         # After enforcement: strictly in ocean!
         self.assertTrue(is_in_ocean(snapped.latitude, snapped.longitude))
         self.assertTrue(snapped.is_shoreline_validated)
-        self.assertGreaterEqual(snapped.distance_from_shore_m, 30)
-        self.assertLessEqual(snapped.distance_from_shore_m, 140)
+        self.assertGreaterEqual(snapped.distance_from_shore_m, 20)
+        self.assertLessEqual(snapped.distance_from_shore_m, 130)
 
         # All polygon points are also in ocean
         for pt_lat, pt_lon in snapped.coordinates_polygon:
@@ -147,8 +149,8 @@ class TestCoastlineModule(unittest.TestCase):
             in_sea = is_in_ocean(p.latitude, p.longitude)
             dist = calculate_distance_to_shore_m(p.latitude, p.longitude)
             self.assertTrue(in_sea, f"Poza {p.name} ({p.id}) is on land! Lat={p.latitude}, Lon={p.longitude}")
-            self.assertGreaterEqual(dist, 30.0, f"Poza {p.name} too close to shore: {dist}m")
-            self.assertLessEqual(dist, 145.0, f"Poza {p.name} too far from shore: {dist}m")
+            self.assertGreaterEqual(dist, 20.0, f"Poza {p.name} too close to shore: {dist}m")
+            self.assertLessEqual(dist, 135.0, f"Poza {p.name} too far from shore: {dist}m")
             self.assertTrue(p.is_shoreline_validated)
 
             # 2. Polygon vertices in ocean
@@ -211,6 +213,55 @@ class TestMultiTemporalPersistence(unittest.TestCase):
         self.assertGreaterEqual(len(high_pers), 1)
         for p in high_pers:
             self.assertGreaterEqual(p.persistence_score, 90.0)
+
+    def test_deterministic_littoral_drift(self):
+        """Verify physics-based CERC / Longuet-Higgins deterministic littoral drift calculation."""
+        pozas = load_pozas_from_json()
+        poza_matalascanas = next(p for p in pozas if "matalascanas" in p.id)
+        poza_islantilla = next(p for p in pozas if "islantilla" in p.id)
+
+        # Shoreline normals along Huelva coast face South (160° - 215°)
+        normal_mat = get_shoreline_normal_azimuth(poza_matalascanas.longitude)
+        self.assertGreaterEqual(normal_mat, 160.0)
+        self.assertLessEqual(normal_mat, 215.0)
+
+        # 1. Standard Atlantic WSW swell (235°):
+        # Breaker angle alpha_b = 235 - normal > 0, sin(2*alpha_b) > 0 -> Drift to Levante (East)
+        drift_wsw = calculate_deterministic_littoral_drift(
+            poza_matalascanas,
+            wave_height_m=1.0,
+            wave_direction_deg=235.0,
+            days_elapsed=5.0,
+        )
+        self.assertIn("Levante", drift_wsw["direction"])
+        self.assertGreater(drift_wsw["daily_migration_m"], 0.0)
+        self.assertGreaterEqual(drift_wsw["drift_offset_m"], 5.0)
+        self.assertLessEqual(drift_wsw["drift_offset_m"], 25.0)
+        self.assertAlmostEqual(
+            drift_wsw["drift_offset_m"],
+            round(abs(drift_wsw["daily_migration_m"] * 5.0), 1),
+            delta=0.2,
+        )
+
+        # 2. Reverse swell from Southeast (120°):
+        # alpha_b = 120 - normal < 0 -> Drift to Poniente (West)
+        drift_se = calculate_deterministic_littoral_drift(
+            poza_islantilla,
+            wave_height_m=1.0,
+            wave_direction_deg=120.0,
+            days_elapsed=5.0,
+        )
+        self.assertIn("Poniente", drift_se["direction"])
+        self.assertLess(drift_se["daily_migration_m"], 0.0)
+
+        # 3. Wave energy dependence: higher wave height -> higher migration rate
+        drift_small = calculate_deterministic_littoral_drift(
+            poza_matalascanas, wave_height_m=0.5, wave_direction_deg=235.0, days_elapsed=5.0
+        )
+        drift_large = calculate_deterministic_littoral_drift(
+            poza_matalascanas, wave_height_m=1.5, wave_direction_deg=235.0, days_elapsed=5.0
+        )
+        self.assertGreater(drift_large["daily_migration_m"], drift_small["daily_migration_m"])
 
 
 if __name__ == "__main__":

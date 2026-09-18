@@ -9,7 +9,7 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 import requests
 
@@ -117,7 +117,7 @@ def _generate_mock_sentinel_metadata(days_ago: int = 1, cloud_pct: float = 2.92)
     )
 
 
-def _generate_mock_sentinel_series(passes_count: int = 3) -> list[SentinelPassMetadata]:
+def _generate_mock_sentinel_series(passes_count: int = 3) -> List[SentinelPassMetadata]:
     """Generates a realistic 5-day cadence multi-temporal Sentinel-2 series (T0, T-5d, T-10d)."""
     series = []
     cadence_days = [1, 6, 11, 16, 21]
@@ -127,7 +127,7 @@ def _generate_mock_sentinel_series(passes_count: int = 3) -> list[SentinelPassMe
     return series
 
 
-def _save_series_to_cache(series: list[SentinelPassMetadata], cache_path: Optional[Path] = None) -> None:
+def _save_series_to_cache(series: List[SentinelPassMetadata], cache_path: Optional[Path] = None) -> None:
     """Save multi-pass series metadata to disk in JSON format."""
     path = cache_path or DEFAULT_SERIES_CACHE_FILE
     try:
@@ -139,7 +139,7 @@ def _save_series_to_cache(series: list[SentinelPassMetadata], cache_path: Option
         logger.warning(f"Failed to write Sentinel series cache to {path}: {e}")
 
 
-def _load_series_from_cache(cache_path: Optional[Path] = None) -> Optional[list[SentinelPassMetadata]]:
+def _load_series_from_cache(cache_path: Optional[Path] = None) -> Optional[List[SentinelPassMetadata]]:
     """Load multi-pass series metadata from disk cache if present and valid."""
     path = cache_path or DEFAULT_SERIES_CACHE_FILE
     if not path.is_file():
@@ -186,7 +186,7 @@ def get_huelva_sentinel_series(
     force_refresh: bool = False,
     cache_path: Optional[Path] = None,
     timeout_sec: int = 10,
-) -> list[SentinelPassMetadata]:
+) -> List[SentinelPassMetadata]:
     """
     Retrieves a multi-temporal series of the most recent Sentinel-2 passes over Huelva (MGRS 29SPB),
     spaced by the satellite's ~5-day revisit cycle. Used to contrast coastal pozas across time.
@@ -233,7 +233,7 @@ def get_huelva_sentinel_series(
         stac_data = response.json()
         features = stac_data.get("features", [])
 
-        parsed_series: list[SentinelPassMetadata] = []
+        parsed_series: List[SentinelPassMetadata] = []
         seen_dates = set()
 
         for feat in features:
