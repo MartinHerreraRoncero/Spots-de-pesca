@@ -303,6 +303,22 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
         rendered = m.get_root().render()
         self.assertGreater(len(rendered), 1000)
 
+    def test_map_rendering_with_focused_poza(self):
+        """Tests that map centers and highlights a focused poza properly."""
+        pozas = load_pozas_from_json()
+        p0 = pozas[0]
+        m = create_andalucia_fishing_map(
+            spots_data=[],
+            subzone_filter="Costa de Huelva",
+            pozas_data=pozas,
+            show_pozas=True,
+            focused_poza_coords=(p0.latitude, p0.longitude),
+        )
+        self.assertIsNotNone(m)
+        rendered = m.get_root().render()
+        self.assertIn("#facc15", rendered)  # Focused gold ring/badge
+        self.assertIn(str(p0.distance_from_shore_m), rendered)
+
     def test_app_py_syntax(self):
         """Verifies app.py compiles cleanly without SyntaxErrors."""
         import py_compile

@@ -15,7 +15,7 @@ from src.analytics.poza_detection import evaluate_poza_fishability
 
 ZONE_VIEWPORTS: Dict[str, Tuple[float, float, int]] = {
     "Toda Andalucía": (36.75, -4.50, 8),
-    "Costa de Huelva": (37.14, -6.98, 10),
+    "Costa de Huelva": (37.15, -7.02, 10),
     "Bahía y Costa de Cádiz": (36.48, -6.22, 10),
     "Estrecho de Gibraltar": (36.08, -5.50, 11),
     "Costa del Sol Occidental": (36.48, -4.88, 10),
@@ -424,6 +424,7 @@ def create_andalucia_fishing_map(
     current_tide_coeff: Optional[float] = 75.0,
     current_wave_h: Optional[float] = 0.8,
     current_knots: Optional[float] = 1.0,
+    focused_poza_coords: Optional[Tuple[float, float]] = None,
     *args,
     **kwargs,
 ) -> folium.Map:
@@ -433,7 +434,10 @@ def create_andalucia_fishing_map(
     """
     center_lat, center_lon, zoom = calculate_optimal_viewport(spots_data, subzone_filter)
 
-    if custom_spot_data and not selected_spot_id:
+    if focused_poza_coords:
+        center_lat, center_lon = focused_poza_coords
+        zoom = 14
+    elif custom_spot_data and not selected_spot_id:
         center_lat = custom_spot_data[0].latitude
         center_lon = custom_spot_data[0].longitude
         zoom = 11
@@ -738,49 +742,14 @@ def create_andalucia_fishing_map(
                 current_speed_knots=knots_safe,
             )
 
-            # Draw polygon if coordinates_polygon exists
-            if poza.coordinates_polygon:
-                folium.Polygon(
-                    locations=poza.coordinates_polygon,
-                    color="#0284c7",
-                    fill_color="#38bdf8",
-                    fill_opacity=0.35,
-                    weight=2,
-                    dash_array="4, 4",
-                    tooltip=f"🌊 {poza.name} ({poza.distance_from_shore_m}m de lance)",
-                ).add_to(fg_pozas)
-
-            # Surfcasting DivIcon badge with glowing/pulsing border if optimal
             is_opt = eval_res.get("is_optimal_now", False)
-            if is_opt:
-                border_css = "2px solid #38bdf8"
-                shadow_css = "0 0 14px rgba(56, 189, 248, 0.95), 0 0 4px #0284c7"
-                bg_css = "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"
-            else:
-                border_css = "1.5px solid #94a3b8"
-                shadow_css = "0 2px 5px rgba(0,0,0,0.3)"
-                bg_css = "linear-gradient(135deg, #0f766e 0%, #0369a1 100%)"
 
-            badge_html = f"""
-            <div style='
-                background: {bg_css};
-                color: white;
-                padding: 3px 8px;
-                border-radius: 12px;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                font-weight: 800;
-                font-size: 11px;
-                border: {border_css};
-                box-shadow: {shadow_css};
-                white-space: nowrap;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-            '>
-                🌊 {poza.distance_from_shore_m}m | -{poza.relative_depth_m}m
-            </div>
-            """
+            # Check if this poza is specifically focused by the user
+            is_focused = False
+            if focused_poza_coords:
+                dist_focused = abs(poza.latitude - focused_poza_coords[0]) + abs(poza.longitude - focused_poza_coords[1])
+                if dist_focused < 0.001:
+                    is_focused = True
 
             popup_html = render_poza_popup_html(poza, eval_res)
             try:
@@ -794,20 +763,92 @@ def create_andalucia_fishing_map(
                 f"Score Pesca: <b>{poza_fscore:.0f}/100</b>"
             )
 
+            # 1. Draw delineated underwater trough polygon
+            if poza.coordinates_polygon:
+                poly_color = "#facc15" if is_focused else "#00f0ff"
+                folium.Polygon(
+                    locations=poza.coordinates_polygon,
+                    color=poly_color,
+                    fill_color="#38bdf8",
+                    fill_opacity=0.45,
+                    weight=3 if is_focused else 2.5,
+                    dash_array="4, 4",
+                    tooltip=f"🌊 Foso Submarino: {poza.name} ({poza.distance_from_shore_m}m de la orilla)",
+                ).add_to(fg_pozas)
+
+            # 2. Glowing beacon CircleMarker directly on the water
+            beacon_radius = 16 if is_focused else (12 if is_opt else 10)
+            beacon_color = "#facc15" if is_focused else "#00f0ff"
+            beacon_fill = "#eab308" if is_focused else ("#38bdf8" if is_opt else "#0284c7")
+
+            folium.CircleMarker(
+                location=[poza.latitude, poza.longitude],
+                radius=beacon_radius,
+                color=beacon_color,
+                weight=3,
+                fill=True,
+                fill_color=beacon_fill,
+                fill_opacity=0.85,
+                tooltip=tooltip_html,
+            ).add_to(fg_pozas)
+
+            if is_focused:
+                folium.CircleMarker(
+                    location=[poza.latitude, poza.longitude],
+                    radius=28,
+                    color="#facc15",
+                    weight=3,
+                    dash_array="5, 5",
+                    fill=True,
+                    fill_color="#fef08a",
+                    fill_opacity=0.25,
+                    tooltip=f"🎯 Poza Seleccionada: {poza.name}",
+                ).add_to(fg_pozas)
+
+            # 3. Surfcasting DivIcon badge anchored right above the beacon
+            badge_border = "3px solid #facc15" if is_focused else ("2px solid #00f0ff" if is_opt else "1.5px solid #38bdf8")
+            badge_shadow = "0 0 16px rgba(250, 204, 21, 0.95), 0 2px 8px rgba(0,0,0,0.6)" if is_focused else ("0 0 14px rgba(0, 240, 255, 0.95), 0 2px 6px rgba(0,0,0,0.5)" if is_opt else "0 2px 6px rgba(0,0,0,0.4)")
+            badge_bg = "linear-gradient(135deg, #78350f 0%, #b45309 100%)" if is_focused else ("linear-gradient(135deg, #0284c7 0%, #0369a1 100%)" if is_opt else "linear-gradient(135deg, #0f766e 0%, #0369a1 100%)")
+
+            badge_html = f"""
+            <div style='
+                background: {badge_bg};
+                color: #ffffff;
+                padding: 3px 9px;
+                border-radius: 12px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-weight: 800;
+                font-size: 11px;
+                border: {badge_border};
+                box-shadow: {badge_shadow};
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                cursor: pointer;
+            '>
+                <span>🌊</span>
+                <span style='color: #fef08a;'>{poza.distance_from_shore_m}m</span>
+                <span style='color: #93c5fd;'>|</span>
+                <span>-{poza.relative_depth_m}m</span>
+            </div>
+            """
+
             folium.Marker(
                 location=[poza.latitude, poza.longitude],
-                icon=folium.DivIcon(icon_size=(115, 26), icon_anchor=(57, 13), html=badge_html),
+                icon=folium.DivIcon(icon_size=(130, 28), icon_anchor=(65, 34), html=badge_html),
                 popup=folium.Popup(popup_html, max_width=340),
                 tooltip=tooltip_html,
             ).add_to(fg_pozas)
 
+    # Layer order: Rivers, Buoys, and Hotspots first; Pozas last so they are topmost
+    fg_rivers.add_to(m)
+    fg_buoys.add_to(m)
+    fg_hotspots.add_to(m)
     fg_excelente.add_to(m)
     fg_muy_bueno.add_to(m)
     fg_desfavorable.add_to(m)
-    fg_hotspots.add_to(m)
     fg_pozas.add_to(m)
-    fg_rivers.add_to(m)
-    fg_buoys.add_to(m)
 
     folium.LayerControl(position="topright", collapsed=False).add_to(m)
 

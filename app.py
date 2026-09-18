@@ -16,6 +16,7 @@ from __future__ import annotations
 from datetime import datetime, timezone, timedelta
 from typing import List, Tuple, Optional, Dict, Any
 import inspect
+import importlib
 import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
@@ -34,11 +35,16 @@ from src.fetchers.sentinel_satellite import get_latest_huelva_sentinel_pass
 from src.analytics.solunar import compute_daily_solunar
 from src.analytics.river_runoff import load_rivers_catalog
 from src.analytics.bathymetry import calculate_bathymetry_profile
+import src.analytics.poza_detection
+importlib.reload(src.analytics.poza_detection)
 from src.analytics.poza_detection import (
     load_pozas_from_json,
     filter_pozas,
     sync_pozas_with_satellite_pass,
+    evaluate_poza_fishability,
 )
+import src.visualization.map_view
+importlib.reload(src.visualization.map_view)
 from src.visualization.map_view import (
     create_andalucia_fishing_map,
     get_spot_type_icon,
@@ -301,11 +307,18 @@ def main():
 
     default_subzone_index = subzone_choices.index("Costa de Huelva") if "Costa de Huelva" in subzone_choices else 0
 
+    if "subzone_select_idx" not in st.session_state:
+        st.session_state["subzone_select_idx"] = default_subzone_index
+    if st.session_state.get("forced_subzone"):
+        target_name = st.session_state.pop("forced_subzone")
+        if target_name in subzone_choices:
+            st.session_state["subzone_select_idx"] = subzone_choices.index(target_name)
+
     selected_subzone_idx = st.sidebar.selectbox(
         "Litoral Costero:",
         range(len(subzone_choices)),
         format_func=lambda i: subzone_labels[i],
-        index=default_subzone_index,
+        key="subzone_select_idx",
     )
     selected_subzone_key = subzone_choices[selected_subzone_idx]
 
@@ -365,6 +378,21 @@ def main():
         method=method_filter_val,
         max_distance=max_cast_dist,
     )
+
+    poza_focus_options = ["🔍 Vista General de Huelva (17 Pozas)"] + [
+        f"{p.beach_name}: {p.name} ({p.distance_from_shore_m}m)" for p in filtered_pozas
+    ]
+    selected_poza_focus_idx = st.sidebar.selectbox(
+        "🎯 Enfocar / Zoom en una Poza:",
+        range(len(poza_focus_options)),
+        format_func=lambda i: poza_focus_options[i],
+        index=0,
+        help="Selecciona una poza específica para que el mapa haga zoom inmediato (14x) sobre ella y muestre su foso submarino en detalle."
+    )
+    focused_poza_coords = None
+    if selected_poza_focus_idx > 0 and (selected_poza_focus_idx - 1) < len(filtered_pozas):
+        target_p = filtered_pozas[selected_poza_focus_idx - 1]
+        focused_poza_coords = (target_p.latitude, target_p.longitude)
 
     # Micro-filters: Scenario Type & Bottom Type
     st.sidebar.markdown("### 🔍 Filtros de Escenario y Fondo")
@@ -549,13 +577,24 @@ def main():
             except (TypeError, ValueError):
                 curr_knots = 1.0
 
-        if show_pozas:
+        if selected_subzone_key != "Costa de Huelva":
+            st.warning(
+                f"📍 Tienes seleccionado el litoral **{selected_subzone_key}**. "
+                f"Las **17 pozas detectadas por satélite** están cartografiadas en la **Costa de Huelva** (Ayamonte a Matalascañas). "
+                f"Para visualizarlas con sus balizas cian en el mapa, selecciona **Costa de Huelva** en la barra lateral o pulsa el botón directo:"
+            )
+            if st.button("🌊 Cambiar Litoral a Costa de Huelva para Ver las Pozas"):
+                st.session_state["forced_subzone"] = "Costa de Huelva"
+                st.rerun()
+
+        if show_pozas and selected_subzone_key == "Costa de Huelva":
             pass_date = sentinel_meta.datetime.split("T")[0] if "T" in sentinel_meta.datetime else sentinel_meta.datetime[:10]
             link_html = f" • [🔗 Ver Escena Sentinel-2 MSI en Planetary Computer]({sentinel_meta.visual_url})" if sentinel_meta.visual_url else ""
-            st.info(
+            focus_text = f" • 🎯 **Enfocando:** `{filtered_pozas[selected_poza_focus_idx - 1].name}`" if focused_poza_coords else ""
+            st.success(
                 f"🌊 **Pozas y Canales Detectados por Satélite ({len(filtered_pozas)} enclaves en Costa de Huelva):** "
-                f"Cartografía derivada de la pasada Sentinel-2 MSI del **{pass_date}** (nubosidad **{sentinel_meta.cloud_cover_pct:.1f}%**, cuadrícula **{sentinel_meta.tile_id}**) y ortofotos submétricas PNOA (IGN 25cm). "
-                f"Haz clic en las balizas y polígonos delimitados para consultar desnivel, distancia de lance y score actual.{link_html}"
+                f"Mostrando **balizas luminosas cian 🌊** y polígonos submarinos delineados a lo largo de las playas (Sentinel-2 MSI {pass_date}, nubes {sentinel_meta.cloud_cover_pct:.1f}% y ortofotos submétricas PNOA 25cm). "
+                f"💡 *Tip:* Para apreciar las barras de arena y el foso en alta resolución, cambia la capa base arriba a la derecha a **'🛰️ Satélite Esri'** o **'📸 Ortofoto PNOA'**.{focus_text}{link_html}"
             )
 
         map_kwargs = {
@@ -573,6 +612,7 @@ def main():
             "current_tide_coeff": curr_tide_coeff,
             "current_wave_h": curr_wave_h,
             "current_knots": curr_knots,
+            "focused_poza_coords": focused_poza_coords,
         }
 
         # Filter kwargs defensively against module cache skew in Streamlit Cloud hot-reloads
@@ -614,6 +654,32 @@ def main():
             st.markdown("<span class='badge-moderate'>🟠 Favorable (Score 45 - 59)</span>", unsafe_allow_html=True)
         with leg4:
             st.markdown("<span class='badge-bad'>🔴 Desfavorable (Score < 45)</span>", unsafe_allow_html=True)
+
+        if show_pozas and filtered_pozas and selected_subzone_key == "Costa de Huelva":
+            with st.expander(f"📋 Ver Catálogo Completo de las {len(filtered_pozas)} Pozas Detectadas por Satélite en Huelva", expanded=False):
+                pozas_rows = []
+                for p in filtered_pozas:
+                    p_eval = evaluate_poza_fishability(
+                        poza=p,
+                        tide_state_name=curr_tide_name,
+                        tide_coeff=curr_tide_coeff,
+                        wave_height_m=curr_wave_h,
+                        current_speed_knots=curr_knots,
+                    )
+                    pozas_rows.append({
+                        "Playa / Sector": p.beach_name,
+                        "Nombre del Foso / Poza": p.name,
+                        "Lance": f"{p.distance_from_shore_m} m",
+                        "Foso": f"+{p.relative_depth_m} m",
+                        "Dimensiones": f"{p.width_m}x{p.length_m} m",
+                        "Score Pesca Actual": f"{p_eval['fishability_score']:.0f}/100",
+                        "Plomo": f"{p_eval['recommended_lead_g']} g",
+                        "Marea Óptima": p.optimal_tide_stage,
+                        "Método": p.detection_method,
+                        "Especies": ", ".join(p.target_species[:3]),
+                    })
+                df_pozas = pd.DataFrame(pozas_rows)
+                st.dataframe(df_pozas, use_container_width=True, hide_index=True)
 
     # 2. TAB: SPOT DETAIL & TIMELINE
     with tab_detail:
