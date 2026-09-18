@@ -27,9 +27,9 @@ from src.fetchers.open_meteo import (
     get_spot_hourly_forecast,
     get_all_spots_snapshot,
     get_buoy_telemetry_snapshot,
-)
 from src.analytics.solunar import compute_daily_solunar
 from src.analytics.river_runoff import load_rivers_catalog
+from src.analytics.bathymetry import calculate_bathymetry_profile
 from src.visualization.map_view import (
     create_andalucia_fishing_map,
     get_spot_type_icon,
@@ -298,6 +298,19 @@ def main():
     if selected_bottom != "Todos los Fondos":
         filtered_spots = [s for s in filtered_spots if s.bottom_type == selected_bottom]
 
+    # Filter by Topographic Hotspots
+    filter_hotspots_only = st.sidebar.checkbox(
+        "⛰️ Solo Hotspots Topográficos",
+        value=False,
+        help="Muestra únicamente enclaves con caídas bruscas, cantiles pronunciados y bajos rocosos (Score Topográfico ≥ 68/100)."
+    )
+    if filter_hotspots_only:
+        hotspots_subset = [s for s in filtered_spots if calculate_bathymetry_profile(s).topographic_hotspot_score >= 68.0]
+        if hotspots_subset:
+            filtered_spots = hotspots_subset
+        else:
+            st.sidebar.warning("No hay spots con relieve ≥ 68/100 en esta selección. Mostrando todos.")
+
     if not filtered_spots:
         filtered_spots = [s for s in all_spots if (selected_subzone_key == "Toda Andalucía" or s.subzone == selected_subzone_key)]
 
@@ -423,7 +436,10 @@ def main():
     # 1. TAB: INTERACTIVE MAP & CLICK MODE
     with tab_map:
         st.markdown(f"#### Mapa Granular: **{selected_subzone_key}** — Modo: **{species_mode_options[selected_species_mode]}**")
-        st.info("💡 **Modo Clic en el Mapa:** Haz clic en cualquier cala, espigón o coordenada para analizarla. Capas activas: Relieve submarino, desembocaduras de ríos y boyas oficiales.")
+        if filter_hotspots_only:
+            st.success(f"⛰️ **Filtro de Hotspots Activo:** Mostrando {len(spots_snapshot)} enclaves con relieve submarino destacado (cantiles, caídas y bajos rocosos con halos y distintivos morados ⛰️).")
+        else:
+            st.info("💡 **Consejo:** Para ver los cantiles y bajos rocosos destacados, activa la capa **'⛰️ Hotspots Topográficos (Cantiles y Bajos)'** en el control de capas arriba a la derecha del mapa, o marca **'⛰️ Solo Hotspots Topográficos'** en la barra lateral.")
 
         folium_map = create_andalucia_fishing_map(
             spots_data=spots_snapshot,
@@ -433,6 +449,7 @@ def main():
             buoys_data=buoys_telemetry,
             rivers_data=all_rivers,
             score_mode=selected_species_mode,
+            highlight_hotspots=filter_hotspots_only,
         )
 
         map_output = st_folium(

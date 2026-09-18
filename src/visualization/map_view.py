@@ -318,6 +318,7 @@ def create_andalucia_fishing_map(
     buoys_data: Optional[List[Tuple[MarineBuoy, BuoyObservation]]] = None,
     rivers_data: Optional[List[Dict[str, Any]]] = None,
     score_mode: str = "GLOBAL",
+    highlight_hotspots: bool = False,
 ) -> folium.Map:
     """
     Generates Folium map of Andalusia with multi-species score coloring,
@@ -362,7 +363,7 @@ def create_andalucia_fishing_map(
     fg_excelente = folium.FeatureGroup(name="🟢 Spots Excelentes (> 75)", show=True)
     fg_muy_bueno = folium.FeatureGroup(name="🟡 Spots Favorables (50 - 74)", show=True)
     fg_desfavorable = folium.FeatureGroup(name="🔴 Spots Desfavorables (< 50)", show=True)
-    fg_hotspots = folium.FeatureGroup(name="⛰️ Hotspots Topográficos (Cantiles y Bajos)", show=False)
+    fg_hotspots = folium.FeatureGroup(name="⛰️ Hotspots Topográficos (Cantiles y Bajos)", show=highlight_hotspots)
     fg_rivers = folium.FeatureGroup(name="🏞️ Desembocaduras y Plumas Fluviales", show=True)
     fg_buoys = folium.FeatureGroup(name="⚓ Boyas Oceanográficas (REDEXT)", show=True)
 
@@ -437,19 +438,48 @@ def create_andalucia_fishing_map(
         else:
             marker.add_to(fg_desfavorable)
 
-        # If it's a high topographic hotspot, also mark it in hotspots layer
+        # If it's a high topographic hotspot, add prominent outer halo and floating badge
         if forecast.score.bathymetry and forecast.score.bathymetry.topographic_hotspot_score >= 68.0:
-            hotspot_marker = folium.CircleMarker(
+            bathy = forecast.score.bathymetry
+            
+            # Outer visible pulsing ring (diameter 54px, clearly visible outside 30px marker)
+            hotspot_halo = folium.CircleMarker(
                 location=[spot.latitude, spot.longitude],
-                radius=14,
+                radius=27,
                 color="#7c3aed",
-                weight=2,
+                weight=3,
+                dash_array="5, 5",
                 fill=True,
                 fill_color="#c4b5fd",
-                fill_opacity=0.6,
-                tooltip=f"<b>⛰️ Hotspot Topográfico: {spot.name}</b><br>{forecast.score.bathymetry.structure_type} (Score: {forecast.score.bathymetry.topographic_hotspot_score:.0f}/100)",
+                fill_opacity=0.35,
+                tooltip=f"<b>⛰️ Hotspot Topográfico: {spot.name}</b><br>{bathy.structure_type} (Score: {bathy.topographic_hotspot_score:.0f}/100)",
             )
-            hotspot_marker.add_to(fg_hotspots)
+            hotspot_halo.add_to(fg_hotspots)
+
+            # Floating badge marker pointing to spot
+            hotspot_badge_html = f"""
+            <div style='
+                background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);
+                color: #ffffff;
+                padding: 2px 7px;
+                border-radius: 10px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-size: 10px;
+                font-weight: 800;
+                border: 1.5px solid white;
+                box-shadow: 0 2px 8px rgba(124, 58, 237, 0.7);
+                white-space: nowrap;
+                cursor: pointer;
+            '>
+                ⛰️ {bathy.topographic_hotspot_score:.0f}
+            </div>
+            """
+            hotspot_badge = folium.Marker(
+                location=[spot.latitude, spot.longitude],
+                icon=folium.DivIcon(icon_size=(55, 20), icon_anchor=(-10, 22), html=hotspot_badge_html),
+                tooltip=f"<b>⛰️ Hotspot Topográfico: {spot.name}</b><br>Estructura: <b>{bathy.structure_type}</b><br>Pendiente: <b>{bathy.depth_gradient_pct}%</b> | Rugosidad: <b>{bathy.rugosity_index}</b><br>Score Estructural: <b>{bathy.topographic_hotspot_score:.0f}/100</b>",
+            )
+            hotspot_badge.add_to(fg_hotspots)
 
     # Render Custom Clicked Spot if present
     if custom_spot_data:
