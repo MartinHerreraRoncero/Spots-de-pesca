@@ -268,14 +268,32 @@ def enforce_marine_bounds(
                 adj_lat = pt_shore_lat - (20.0 / 111139.0)  # at least 20m seaward
             new_polygon.append((round(adj_lat, 6), round(adj_lon, 6)))
 
-    return replace(
-        poza,
-        latitude=round(new_lat, 6),
-        longitude=round(new_lon, 6),
-        distance_from_shore_m=enforced_dist,
-        coordinates_polygon=new_polygon,
-        is_shoreline_validated=True,
-    )
+    if hasattr(poza, "clone_with"):
+        return poza.clone_with(
+            latitude=round(new_lat, 6),
+            longitude=round(new_lon, 6),
+            distance_from_shore_m=enforced_dist,
+            coordinates_polygon=new_polygon,
+            is_shoreline_validated=True,
+        )
+
+    try:
+        return replace(
+            poza,
+            latitude=round(new_lat, 6),
+            longitude=round(new_lon, 6),
+            distance_from_shore_m=enforced_dist,
+            coordinates_polygon=new_polygon,
+            is_shoreline_validated=True,
+        )
+    except Exception:
+        d = poza.to_dict() if hasattr(poza, "to_dict") else dict(vars(poza))
+        d["latitude"] = round(new_lat, 6)
+        d["longitude"] = round(new_lon, 6)
+        d["distance_from_shore_m"] = enforced_dist
+        d["coordinates_polygon"] = new_polygon
+        d["is_shoreline_validated"] = True
+        return DetectedPoza.from_dict(d)
 
 
 def get_huelva_shoreline_folium_coords() -> List[Tuple[float, float]]:

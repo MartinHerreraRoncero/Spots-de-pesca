@@ -507,9 +507,8 @@ def contrast_multi_temporal_pozas(
         conf_adj = 1.0 if cloud_pct < 5.0 else (-2.0 if cloud_pct > 15.0 else 0.0)
         final_conf = round(max(50.0, min(99.0, p_marine.confidence_score + conf_adj)), 1)
 
-        contrasted.append(
-            replace(
-                p_marine,
+        if hasattr(p_marine, "clone_with"):
+            p_updated = p_marine.clone_with(
                 satellite_pass_date=latest_date,
                 confidence_score=final_conf,
                 persistence_score=persistence,
@@ -519,7 +518,31 @@ def contrast_multi_temporal_pozas(
                 morphodynamic_stability=stability,
                 is_shoreline_validated=True,
             )
-        )
+        else:
+            try:
+                p_updated = replace(
+                    p_marine,
+                    satellite_pass_date=latest_date,
+                    confidence_score=final_conf,
+                    persistence_score=persistence,
+                    temporal_passes_count=confirmed_passes,
+                    observation_dates=obs_dates,
+                    drift_offset_m=drift,
+                    morphodynamic_stability=stability,
+                    is_shoreline_validated=True,
+                )
+            except Exception:
+                d = p_marine.to_dict() if hasattr(p_marine, "to_dict") else dict(vars(p_marine))
+                d["satellite_pass_date"] = latest_date
+                d["confidence_score"] = final_conf
+                d["persistence_score"] = persistence
+                d["temporal_passes_count"] = confirmed_passes
+                d["observation_dates"] = obs_dates
+                d["drift_offset_m"] = drift
+                d["morphodynamic_stability"] = stability
+                d["is_shoreline_validated"] = True
+                p_updated = DetectedPoza.from_dict(d)
+        contrasted.append(p_updated)
 
     return contrasted
 

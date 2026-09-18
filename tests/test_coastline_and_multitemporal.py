@@ -263,6 +263,55 @@ class TestMultiTemporalPersistence(unittest.TestCase):
         )
         self.assertGreater(drift_large["daily_migration_m"], drift_small["daily_migration_m"])
 
+    def test_legacy_pickled_poza_resilience(self):
+        """Verify that older pickled or incomplete poza instances do not raise AttributeError upon replace/contrast."""
+        import pickle
+        # Simulate legacy serialized poza without modern attributes
+        legacy_dict = {
+            "id": "legacy_poza_01",
+            "name": "Poza Antigua",
+            "beach_name": "Islantilla",
+            "latitude": 37.1970,
+            "longitude": -7.2345,
+            "detection_method": "SDB_STUMPF",
+            "distance_from_shore_m": 70,
+            "width_m": 35,
+            "length_m": 80,
+            "relative_depth_m": 1.8,
+            "confidence_score": 90.0,
+            "target_species": ["Dorada"],
+            "optimal_tide_stage": "Pleamar",
+            "satellite_pass_date": "2026-09-17",
+        }
+        poza = DetectedPoza.from_dict(legacy_dict)
+        # Manually delete newly added attributes to simulate unpickling an older schema
+        for attr in ["persistence_score", "observation_dates", "drift_offset_m", "morphodynamic_stability", "is_shoreline_validated"]:
+            if attr in poza.__dict__:
+                del poza.__dict__[attr]
+
+        # 1. Attribute access via __getattr__ defaults without AttributeError
+        self.assertEqual(poza.persistence_score, 90.0)
+        self.assertEqual(poza.temporal_passes_count, 1)
+        self.assertEqual(poza.drift_offset_m, 0.0)
+        self.assertTrue(poza.is_shoreline_validated)
+
+        # 2. enforce_marine_bounds doesn't crash
+        enforced = enforce_marine_bounds(poza)
+        self.assertIsNotNone(enforced)
+        self.assertTrue(enforced.is_shoreline_validated)
+
+        # 3. contrast_multi_temporal_pozas doesn't crash
+        series = get_huelva_sentinel_series(passes_count=1)
+        contrasted = contrast_multi_temporal_pozas([poza], series)
+        self.assertEqual(len(contrasted), 1)
+
+        # 4. Pickle roundtrip
+        pickled_data = pickle.dumps(poza)
+        unpickled = pickle.loads(pickled_data)
+        self.assertEqual(unpickled.id, "legacy_poza_01")
+        self.assertEqual(unpickled.persistence_score, 90.0)
+        self.assertTrue(unpickled.is_shoreline_validated)
+
 
 if __name__ == "__main__":
     unittest.main()

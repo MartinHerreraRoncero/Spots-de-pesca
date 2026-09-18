@@ -22,7 +22,11 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 from src.models.spot import Spot, HourlySpotForecast, MarineBuoy, BuoyObservation, ScoringWeights
+import src.models.poza
+importlib.reload(src.models.poza)
 from src.models.poza import DetectedPoza, SentinelPassMetadata
+import src.analytics.coastline
+importlib.reload(src.analytics.coastline)
 from src.fetchers.open_meteo import (
     load_spots_from_json,
     load_marine_buoys_from_json,
@@ -189,7 +193,6 @@ def get_cached_rivers() -> List[Dict[str, Any]]:
     return load_rivers_catalog()
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def get_cached_pozas() -> List[DetectedPoza]:
     return load_pozas_from_json()
 
