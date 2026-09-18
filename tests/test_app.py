@@ -43,7 +43,9 @@ from src.visualization.map_view import (
     get_score_color,
     calculate_optimal_viewport,
     get_display_score_for_mode,
+    render_poza_popup_html,
 )
+from src.analytics.poza_detection import load_pozas_from_json, evaluate_poza_fishability
 from src.visualization.charts import (
     create_pressure_and_score_chart,
     create_marine_and_wind_chart,
@@ -228,6 +230,58 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
             score_mode="DORADA",
         )
         self.assertIsNotNone(m)
+
+    def test_map_rendering_with_satellite_pozas(self):
+        """Tests map generation with PNOA WMS layer, Esri World Imagery, and satellite poza layers."""
+        pozas = load_pozas_from_json()
+        self.assertGreater(len(pozas), 0)
+
+        f0 = get_spot_hourly_forecast(self.test_spot, forecast_days=1)[0]
+        telemetry = get_buoy_telemetry_snapshot(self.buoys, self.now_utc)
+
+        m = create_andalucia_fishing_map(
+            spots_data=[(self.test_spot, f0)],
+            selected_spot_id=self.test_spot.id,
+            subzone_filter="Costa de Huelva",
+            buoys_data=telemetry,
+            rivers_data=self.rivers,
+            score_mode="DORADA",
+            pozas_data=pozas,
+            show_pozas=True,
+            current_tide_name="Bajamar",
+            current_tide_coeff=82.0,
+            current_wave_h=0.7,
+            current_knots=1.1,
+        )
+        self.assertIsNotNone(m)
+        rendered_html = m.get_root().render()
+        self.assertIn("PNOA", rendered_html)
+        self.assertIn("Esri World Imagery", rendered_html)
+        self.assertIn("Pozas y Canales Detectados", rendered_html)
+
+    def test_render_poza_popup_html(self):
+        """Tests rendering of rich HTML popup card for coastal poza markers."""
+        pozas = load_pozas_from_json()
+        poza = pozas[0]
+        eval_res = evaluate_poza_fishability(
+            poza=poza,
+            tide_state_name=poza.optimal_tide_stage,
+            tide_coeff=80.0,
+            wave_height_m=0.8,
+            current_speed_knots=1.0,
+        )
+        html = render_poza_popup_html(poza, eval_res)
+        self.assertIn(poza.name, html)
+        self.assertIn(poza.beach_name, html)
+        self.assertIn(str(poza.distance_from_shore_m), html)
+        self.assertIn(str(poza.relative_depth_m), html)
+        self.assertIn(str(poza.width_m), html)
+        self.assertIn(str(poza.length_m), html)
+        self.assertIn(poza.satellite_pass_date, html)
+        self.assertIn(f"{eval_res['fishability_score']:.0f}", html)
+        self.assertIn(str(eval_res["recommended_lead_g"]), html)
+        for sp in poza.target_species[:2]:
+            self.assertIn(sp, html)
 
     def test_app_py_syntax(self):
         """Verifies app.py compiles cleanly without SyntaxErrors."""

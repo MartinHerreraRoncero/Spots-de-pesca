@@ -9,6 +9,8 @@ import folium
 from folium import plugins
 
 from src.models.spot import Spot, HourlySpotForecast, MarineBuoy, BuoyObservation
+from src.models.poza import DetectedPoza
+from src.analytics.poza_detection import evaluate_poza_fishability
 
 
 ZONE_VIEWPORTS: Dict[str, Tuple[float, float, int]] = {
@@ -310,6 +312,100 @@ def render_buoy_popup_html(buoy: MarineBuoy, obs: BuoyObservation) -> str:
     return html
 
 
+def render_poza_popup_html(poza: DetectedPoza, eval_res: Dict[str, Any]) -> str:
+    """Creates a rich, beautifully styled HTML popup card for a detected coastal poza marker."""
+    method_labels = {
+        "SDB_STUMPF": "SDB Stumpf (Ratio Azul/Verde Sentinel-2)",
+        "BREAKER_GAP": "Brecha de Rompiente (Discontinuidad de Oleaje)",
+        "PNOA_ORTHO": "Ortofoto Aérea PNOA (IGN 25cm)",
+    }
+    method_name = method_labels.get(poza.detection_method, poza.detection_method)
+
+    score = eval_res.get("fishability_score", 70.0)
+    score_color = get_score_color(score)
+    is_optimal = eval_res.get("is_optimal_now", False)
+    optimal_badge = (
+        "<span style='background-color:#10b981; color:white; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700;'>⚡ MOMENTO ÓPTIMO</span>"
+        if is_optimal
+        else "<span style='background-color:#f59e0b; color:white; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700;'>CONDICIÓN MODERADA</span>"
+    )
+
+    species_chips = "".join(
+        f"<span style='background-color:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:10px; font-size:11px; margin-right:4px; display:inline-block; margin-bottom:3px;'>🐟 {sp}</span>"
+        for sp in poza.target_species
+    )
+
+    baits_chips = "".join(
+        f"<span style='background-color:#fef3c7; color:#92400e; padding:2px 7px; border-radius:10px; font-size:11px; margin-right:4px; display:inline-block; margin-bottom:3px;'>🪱 {bait}</span>"
+        for bait in eval_res.get("recommended_baits", [])
+    )
+
+    html = f"""
+    <div style='font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; width: 310px; padding: 2px;'>
+        <div style='border-bottom: 2px solid {score_color}; padding-bottom: 6px; margin-bottom: 8px;'>
+            <div style='display: flex; justify-content: space-between; align-items: center;'>
+                <span style='font-size: 11px; text-transform: uppercase; color: #0284c7; font-weight: 700;'>
+                    Playa / Sector: <b>{poza.beach_name}</b>
+                </span>
+                {optimal_badge}
+            </div>
+            <h4 style='margin: 4px 0 0 0; color: #0f172a; font-size: 14px; font-weight: 700; line-height: 1.2;'>
+                🌊 {poza.name}
+            </h4>
+            <div style='font-size: 11px; color: #64748b; margin-top: 3px;'>
+                Método de detección: <b>{method_name}</b>
+            </div>
+        </div>
+
+        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; font-size: 11px;'>
+            <div style='background: #eff6ff; padding: 6px; border-radius: 6px;'>
+                <span style='color: #1e40af; display: block; font-size: 10px; font-weight:700;'>🎯 DISTANCIA A ORILLA</span>
+                <b style='color: #1e3a8a; font-size: 13px;'>{poza.distance_from_shore_m} metros</b>
+            </div>
+            <div style='background: #eff6ff; padding: 6px; border-radius: 6px;'>
+                <span style='color: #1e40af; display: block; font-size: 10px; font-weight:700;'>📉 DESNIVEL (FOSO)</span>
+                <b style='color: #1e3a8a; font-size: 13px;'>+{poza.relative_depth_m} metros de poza</b>
+            </div>
+            <div style='background: #f8fafc; padding: 6px; border-radius: 6px;'>
+                <span style='color: #64748b; display: block; font-size: 10px; font-weight:700;'>📐 DIMENSIONES</span>
+                <b style='color: #0f172a; font-size: 12px;'>{poza.width_m}m ancho x {poza.length_m}m largo</b>
+            </div>
+            <div style='background: #f8fafc; padding: 6px; border-radius: 6px;'>
+                <span style='color: #64748b; display: block; font-size: 10px; font-weight:700;'>⚖️ PLOMO SUGERIDO</span>
+                <b style='color: #0f172a; font-size: 12px;'>{eval_res.get('recommended_lead_g', 130)}g</b>
+            </div>
+        </div>
+
+        <div style='background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px; margin-bottom: 6px; font-size: 11px;'>
+            <div style='display: flex; justify-content: space-between;'>
+                <span style='color: #166534; font-weight: 700;'>🌊 MOMENTO DE MAREA ÓPTIMO:</span>
+                <b style='color: {score_color}; font-size: 12px;'>Score: {score:.0f}/100</b>
+            </div>
+            <span style='color: #374151; font-weight: 600;'>{poza.optimal_tide_stage}</span>
+        </div>
+
+        <div style='margin-top: 6px;'>
+            <div style='font-size: 10px; font-weight: 700; color: #475569; margin-bottom: 3px;'>ESPECIES DIANA:</div>
+            {species_chips}
+        </div>
+
+        <div style='margin-top: 6px;'>
+            <div style='font-size: 10px; font-weight: 700; color: #475569; margin-bottom: 3px;'>CEBOS RECOMENDADOS:</div>
+            {baits_chips}
+        </div>
+
+        <div style='margin-top: 8px; border-top: 1px dashed #cbd5e1; padding-top: 6px; font-size: 11px; color: #475569; line-height: 1.3;'>
+            <i>{eval_res.get('activity_summary', '')}</i>
+        </div>
+
+        <div style='margin-top: 6px; font-size: 10px; color: #94a3b8; text-align: right;'>
+            🛰️ Fecha de la imagen satelital: <b>{poza.satellite_pass_date}</b>
+        </div>
+    </div>
+    """
+    return html
+
+
 def create_andalucia_fishing_map(
     spots_data: List[Tuple[Spot, HourlySpotForecast]],
     selected_spot_id: Optional[str] = None,
@@ -319,6 +415,12 @@ def create_andalucia_fishing_map(
     rivers_data: Optional[List[Dict[str, Any]]] = None,
     score_mode: str = "GLOBAL",
     highlight_hotspots: bool = False,
+    pozas_data: Optional[List[DetectedPoza]] = None,
+    show_pozas: bool = True,
+    current_tide_name: str = "Pleamar",
+    current_tide_coeff: float = 75.0,
+    current_wave_h: float = 0.8,
+    current_knots: float = 1.0,
 ) -> folium.Map:
     """
     Generates Folium map of Andalusia with multi-species score coloring,
@@ -354,8 +456,18 @@ def create_andalucia_fishing_map(
 
     folium.TileLayer(
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attr="Esri World Imagery",
-        name="🛰️ Satélite Esri (Relieve y Costas)",
+        name="🛰️ Satélite Esri World Imagery",
+        attr="Esri, Maxar, Earthstar Geographics",
+        control=True,
+    ).add_to(m)
+
+    folium.WmsTileLayer(
+        url="https://www.ign.es/wms-inspire/pnoa-ma",
+        name="📸 Ortofoto Aérea PNOA (IGN 25cm)",
+        layers="OI.OrthoimageCoverage",
+        format="image/png",
+        transparent=False,
+        attr="Instituto Geográfico Nacional (IGN)",
         control=True,
     ).add_to(m)
 
@@ -364,6 +476,7 @@ def create_andalucia_fishing_map(
     fg_muy_bueno = folium.FeatureGroup(name="🟡 Spots Favorables (50 - 74)", show=True)
     fg_desfavorable = folium.FeatureGroup(name="🔴 Spots Desfavorables (< 50)", show=True)
     fg_hotspots = folium.FeatureGroup(name="⛰️ Hotspots Topográficos (Cantiles y Bajos)", show=highlight_hotspots)
+    fg_pozas = folium.FeatureGroup(name="🌊 Pozas y Canales Detectados (Satélite)", show=show_pozas)
     fg_rivers = folium.FeatureGroup(name="🏞️ Desembocaduras y Plumas Fluviales", show=True)
     fg_buoys = folium.FeatureGroup(name="⚓ Boyas Oceanográficas (REDEXT)", show=True)
 
@@ -595,10 +708,80 @@ def create_andalucia_fishing_map(
                 tooltip=f"<b>🏞️ Desembocadura: {r['name']}</b>",
             ).add_to(fg_rivers)
 
+    # Render Detected Coastal Pozas & Channels Layer
+    if pozas_data:
+        for poza in pozas_data:
+            eval_res = evaluate_poza_fishability(
+                poza=poza,
+                tide_state_name=current_tide_name,
+                tide_coeff=current_tide_coeff,
+                wave_height_m=current_wave_h,
+                current_speed_knots=current_knots,
+            )
+
+            # Draw polygon if coordinates_polygon exists
+            if poza.coordinates_polygon:
+                folium.Polygon(
+                    locations=poza.coordinates_polygon,
+                    color="#0284c7",
+                    fill_color="#38bdf8",
+                    fill_opacity=0.35,
+                    weight=2,
+                    dash_array="4, 4",
+                    tooltip=f"🌊 {poza.name} ({poza.distance_from_shore_m}m de lance)",
+                ).add_to(fg_pozas)
+
+            # Surfcasting DivIcon badge with glowing/pulsing border if optimal
+            is_opt = eval_res.get("is_optimal_now", False)
+            if is_opt:
+                border_css = "2px solid #38bdf8"
+                shadow_css = "0 0 14px rgba(56, 189, 248, 0.95), 0 0 4px #0284c7"
+                bg_css = "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"
+            else:
+                border_css = "1.5px solid #94a3b8"
+                shadow_css = "0 2px 5px rgba(0,0,0,0.3)"
+                bg_css = "linear-gradient(135deg, #0f766e 0%, #0369a1 100%)"
+
+            badge_html = f"""
+            <div style='
+                background: {bg_css};
+                color: white;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-weight: 800;
+                font-size: 11px;
+                border: {border_css};
+                box-shadow: {shadow_css};
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            '>
+                🌊 {poza.distance_from_shore_m}m | -{poza.relative_depth_m}m
+            </div>
+            """
+
+            popup_html = render_poza_popup_html(poza, eval_res)
+            tooltip_html = (
+                f"<b>🌊 {poza.name}</b> ({poza.beach_name})<br>"
+                f"Lance: <b>{poza.distance_from_shore_m}m</b> | Foso: <b>+{poza.relative_depth_m}m</b><br>"
+                f"Score Pesca: <b>{eval_res['fishability_score']:.0f}/100</b>"
+            )
+
+            folium.Marker(
+                location=[poza.latitude, poza.longitude],
+                icon=folium.DivIcon(icon_size=(115, 26), icon_anchor=(57, 13), html=badge_html),
+                popup=folium.Popup(popup_html, max_width=340),
+                tooltip=tooltip_html,
+            ).add_to(fg_pozas)
+
     fg_excelente.add_to(m)
     fg_muy_bueno.add_to(m)
     fg_desfavorable.add_to(m)
     fg_hotspots.add_to(m)
+    fg_pozas.add_to(m)
     fg_rivers.add_to(m)
     fg_buoys.add_to(m)
 

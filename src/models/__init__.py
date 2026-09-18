@@ -22,6 +22,12 @@ from src.models.spot import (
     ScoringWeights,
 )
 
+from src.models.poza import (
+    DetectedPoza,
+    SentinelPassMetadata,
+    DetectionMethod,
+)
+
 __all__ = [
     "Spot",
     "MarineBuoy",
@@ -39,4 +45,7 @@ __all__ = [
     "ScoreBreakdown",
     "HourlySpotForecast",
     "ScoringWeights",
+    "DetectedPoza",
+    "SentinelPassMetadata",
+    "DetectionMethod",
 ]

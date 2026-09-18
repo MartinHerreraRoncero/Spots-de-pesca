@@ -20,6 +20,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 from src.models.spot import Spot, HourlySpotForecast, MarineBuoy, BuoyObservation, ScoringWeights
+from src.models.poza import DetectedPoza, SentinelPassMetadata
 from src.fetchers.open_meteo import (
     load_spots_from_json,
     load_marine_buoys_from_json,
@@ -28,9 +29,15 @@ from src.fetchers.open_meteo import (
     get_all_spots_snapshot,
     get_buoy_telemetry_snapshot,
 )
+from src.fetchers.sentinel_satellite import get_latest_huelva_sentinel_pass
 from src.analytics.solunar import compute_daily_solunar
 from src.analytics.river_runoff import load_rivers_catalog
 from src.analytics.bathymetry import calculate_bathymetry_profile
+from src.analytics.poza_detection import (
+    load_pozas_from_json,
+    filter_pozas,
+    sync_pozas_with_satellite_pass,
+)
 from src.visualization.map_view import (
     create_andalucia_fishing_map,
     get_spot_type_icon,
@@ -164,6 +171,16 @@ def get_cached_rivers() -> List[Dict[str, Any]]:
     return load_rivers_catalog()
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_pozas() -> List[DetectedPoza]:
+    return load_pozas_from_json()
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_sentinel_pass(force: bool = False) -> SentinelPassMetadata:
+    return get_latest_huelva_sentinel_pass(force_refresh=force)
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_cached_spot_forecasts(spot_id: str, _spot_obj: Spot, w_press: float, w_sol: float, w_mar: float, w_wind: float, w_moon: float) -> List[HourlySpotForecast]:
     weights = ScoringWeights(
@@ -180,6 +197,13 @@ def main():
     all_spots = get_cached_spots()
     all_buoys = get_cached_buoys()
     all_rivers = get_cached_rivers()
+    raw_pozas = get_cached_pozas()
+
+    if "sentinel_meta" not in st.session_state:
+        st.session_state["sentinel_meta"] = get_cached_sentinel_pass(force=False)
+
+    sentinel_meta: SentinelPassMetadata = st.session_state["sentinel_meta"]
+    synced_pozas = sync_pozas_with_satellite_pass(raw_pozas, sentinel_meta)
 
     # Sidebar Header
     st.sidebar.markdown("""
@@ -274,11 +298,13 @@ def main():
             cnt = subzone_counts.get(sz, 0)
             subzone_labels.append(f"📍 {sz} ({cnt} spots)")
 
+    default_subzone_index = subzone_choices.index("Costa de Huelva") if "Costa de Huelva" in subzone_choices else 0
+
     selected_subzone_idx = st.sidebar.selectbox(
         "Litoral Costero:",
         range(len(subzone_choices)),
         format_func=lambda i: subzone_labels[i],
-        index=0,
+        index=default_subzone_index,
     )
     selected_subzone_key = subzone_choices[selected_subzone_idx]
 
@@ -286,6 +312,58 @@ def main():
         filtered_spots = all_spots
     else:
         filtered_spots = [s for s in all_spots if s.subzone == selected_subzone_key]
+
+    # Dedicated Section: Sentinel-2 & Surfcasting Pozas
+    st.sidebar.markdown("### 🛰️ Satélite Sentinel-2 & Pozas de Surfcasting")
+    pass_date_str = sentinel_meta.datetime.split("T")[0] if "T" in sentinel_meta.datetime else sentinel_meta.datetime[:10]
+    col_sat1, col_sat2, col_sat3 = st.sidebar.columns(3)
+    col_sat1.metric("Pasada", pass_date_str)
+    col_sat2.metric("Nubes", f"{sentinel_meta.cloud_cover_pct:.1f}%")
+    col_sat3.metric("Cuadrícula", sentinel_meta.tile_id)
+
+    if st.sidebar.button("🔄 Forzar Actualización Sentinel-2"):
+        with st.spinner("Consultando Microsoft Planetary Computer STAC API para Sentinel-2..."):
+            fresh_meta = get_latest_huelva_sentinel_pass(force_refresh=True)
+            st.session_state["sentinel_meta"] = fresh_meta
+            st.cache_data.clear()
+            st.sidebar.success("🛰️ ¡Metadatos Sentinel-2 actualizados con éxito!")
+            st.rerun()
+
+    show_pozas = st.sidebar.checkbox(
+        "🌊 Mostrar Pozas y Canales en Mapa",
+        value=True,
+        help="Muestra u oculta las depresiones, canales de marea y pozas detectadas por satélite."
+    )
+
+    method_choices = ["Todos los métodos", "SDB_STUMPF", "BREAKER_GAP", "PNOA_ORTHO"]
+    method_labels = {
+        "Todos los métodos": "Todos los métodos",
+        "SDB_STUMPF": "🛰️ SDB Stumpf (Azul/Verde)",
+        "BREAKER_GAP": "🌊 Brecha de Rompiente",
+        "PNOA_ORTHO": "📸 Ortofoto PNOA 25cm",
+    }
+    selected_method = st.sidebar.selectbox(
+        "Método de Detección Satelital:",
+        method_choices,
+        format_func=lambda m: method_labels.get(m, m),
+        index=0,
+    )
+
+    max_cast_dist = st.sidebar.slider(
+        "Distancia máxima de lance (m)",
+        min_value=40,
+        max_value=150,
+        value=150,
+        step=5,
+        help="Filtra pozas y canales según el alcance máximo de lance de surfcasting desde la orilla."
+    )
+
+    method_filter_val = None if selected_method == "Todos los métodos" else selected_method
+    filtered_pozas = filter_pozas(
+        synced_pozas,
+        method=method_filter_val,
+        max_distance=max_cast_dist,
+    )
 
     # Micro-filters: Scenario Type & Bottom Type
     st.sidebar.markdown("### 🔍 Filtros de Escenario y Fondo")
@@ -442,6 +520,22 @@ def main():
         else:
             st.info("💡 **Consejo:** Para ver los cantiles y bajos rocosos destacados, activa la capa **'⛰️ Hotspots Topográficos (Cantiles y Bajos)'** en el control de capas arriba a la derecha del mapa, o marca **'⛰️ Solo Hotspots Topográficos'** en la barra lateral.")
 
+        # Reference environmental conditions for pozas fishability evaluation
+        ref_fc = spots_snapshot[0][1] if spots_snapshot else None
+        curr_tide_name = ref_fc.score.tide_state.state_name if ref_fc else "Pleamar"
+        curr_tide_coeff = float(ref_fc.score.tide_state.coefficient) if ref_fc else 75.0
+        curr_wave_h = float(ref_fc.marine.wave_height) if ref_fc else 0.8
+        curr_knots = float(ref_fc.marine.current_velocity_knots) if ref_fc else 1.0
+
+        if show_pozas:
+            pass_date = sentinel_meta.datetime.split("T")[0] if "T" in sentinel_meta.datetime else sentinel_meta.datetime[:10]
+            link_html = f" • [🔗 Ver Escena Sentinel-2 MSI en Planetary Computer]({sentinel_meta.visual_url})" if sentinel_meta.visual_url else ""
+            st.info(
+                f"🌊 **Pozas y Canales Detectados por Satélite ({len(filtered_pozas)} enclaves en Costa de Huelva):** "
+                f"Cartografía derivada de la pasada Sentinel-2 MSI del **{pass_date}** (nubosidad **{sentinel_meta.cloud_cover_pct:.1f}%**, cuadrícula **{sentinel_meta.tile_id}**) y ortofotos submétricas PNOA (IGN 25cm). "
+                f"Haz clic en las balizas y polígonos delimitados para consultar desnivel, distancia de lance y score actual.{link_html}"
+            )
+
         folium_map = create_andalucia_fishing_map(
             spots_data=spots_snapshot,
             selected_spot_id=selected_spot.id if selected_spot and not st.session_state["custom_spot_coords"] else None,
@@ -451,6 +545,12 @@ def main():
             rivers_data=all_rivers,
             score_mode=selected_species_mode,
             highlight_hotspots=filter_hotspots_only,
+            pozas_data=filtered_pozas,
+            show_pozas=show_pozas,
+            current_tide_name=curr_tide_name,
+            current_tide_coeff=curr_tide_coeff,
+            current_wave_h=curr_wave_h,
+            current_knots=curr_knots,
         )
 
         map_output = st_folium(
@@ -783,6 +883,24 @@ def main():
         #### 5. 🏞️ Descarga Fluvial y Plumas de Salinidad
         * **12 Cuencas Andaluzas:** Monitorización de las desembocaduras de los principales ríos (Guadalquivir, Guadiana, Guadalete, Guadalfeo, etc.).
         * **Choque Osmótico:** Los aportes de agua dulce y sedimentos disparan la actividad de la lubina y la corvina, mientras que desplazan al calamar mar adentro.
+
+        ---
+
+        #### 6. 🛰️ Teledetección Satelital de Pozas y Canales de Surfcasting (Costa de Huelva)
+        Las playas arenosas del litoral onubense (Ayamonte, Isla Canela, Isla Cristina, La Redondela, Islantilla, El Terrón, El Portil, Punta Umbría, Mazagón y Matalascañas) son sistemas morfodinámicos expuestos al régimen atlántico donde el oleaje y la deriva litoral esculpen barras arenosas y fosos submarinos. En surfcasting, localizar estas depresiones (pozas y canales de resaca) es el factor determinante para el éxito, ya que retienen agua oxigenada, cangrejos, gusanas y moluscos, atrayendo a doradas, herreras, lubinas y corvinas. El sistema combina 3 metodologías avanzadas de detección:
+
+        * **1. Batimetría Satelital SDB Stumpf (Ratio Azul/Verde Sentinel-2 MSI):**
+          Basada en la teoría de transferencia radiativa óptica en aguas someras limpias. La radiación en la longitud de onda azul (Banda 2, \(\sim 490\text{ nm}\)) posee un coeficiente de absorción muy bajo, penetrando en la columna de agua hasta 15-20 m, mientras que la banda verde (Banda 3, \(\sim 560\text{ nm}\)) se atenúa con mayor rapidez. Aplicando la ecuación logarítmica de Stumpf et al. (2003):
+          \[
+          Z = m_1 \frac{\ln(n \cdot R_{\text{B02}})}{\ln(n \cdot R_{\text{B03}})} - m_0
+          \]
+          donde \(R_{\text{B02}}\) y \(R_{\text{B03}}\) son las reflectancias de fondo en superficie (Sentinel-2 L2A), \(n\) es la constante de escalado para garantizar logaritmos positivos, y \(m_1, m_0\) son factores empíricos ajustados a las aguas arenosas del Golfo de Cádiz. Esta inversión permite cartografiar desniveles relativos de foso de \(+0.8\text{m}\) a \(+2.8\text{m}\) respecto a la barra contigua.
+
+        * **2. Brecha de Rompiente (Breaker Line Disruption):**
+          Cuando los trenes de olas incidentes alcanzan aguas someras sobre una barra de arena, rompen por pérdida de estabilidad hidrodinámica al cumplirse el criterio de rotura (\(\gamma = H_b / h \approx 0.78\)). Sin embargo, en los puntos donde un canal de resaca o una poza corta transversalmente la barra, el calado local \(h\) se incrementa bruscamente. En consecuencia, la relación \(H / h\) disminuye por debajo del umbral de rotura, generando una "brecha" o discontinuidad nítida en la banda de espuma blanca (*foam line*), detectable automáticamente mediante análisis de discontinuidad textural en imágenes Sentinel-2 L2A a 10m de resolución espacial.
+
+        * **3. Fotogrametría Aérea de Máxima Resolución PNOA (IGN 25cm):**
+          Verificación geométrica de alta fidelidad empleando las ortofotografías aéreas digitales del Plan Nacional de Ortofotografía Aérea (PNOA) del Instituto Geográfico Nacional, adquiridas con sensores aerotransportados de gran formato calibrados en condiciones de bajamar viva escorada. Proporciona una resolución de 25 cm por píxel que permite delinear el perímetro exacto de bermas, barras emergidas, canalizos intermareales y gargantas de desagüe con precisión submétrica.
         """)
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ from src.visualization.map_view import (
     get_spot_type_icon,
     get_display_score_for_mode,
     render_spot_popup_html,
+    render_poza_popup_html,
 )
 from src.visualization.charts import (
     create_pressure_and_score_chart,
@@ -23,6 +24,7 @@ __all__ = [
     "get_spot_type_icon",
     "get_display_score_for_mode",
     "render_spot_popup_html",
+    "render_poza_popup_html",
     "create_pressure_and_score_chart",
     "create_marine_and_wind_chart",
     "create_score_radar_chart",

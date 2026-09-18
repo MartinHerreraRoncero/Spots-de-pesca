@@ -1,0 +1,470 @@
+[
+  {
+    "id": "poza_isla_canela_guadiana_01",
+    "name": "Canalizo de Marea del Guadiana - Barra de Poniente",
+    "beach_name": "Isla Canela",
+    "latitude": 37.1745,
+    "longitude": -7.4082,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 95,
+    "width_m": 45,
+    "length_m": 130,
+    "relative_depth_m": 2.4,
+    "confidence_score": 94.5,
+    "target_species": [
+      "Corvina",
+      "Dorada",
+      "Robalo",
+      "Baila",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1742, -7.4088],
+      [37.1748, -7.4084],
+      [37.1746, -7.4076],
+      [37.1740, -7.4080]
+    ]
+  },
+  {
+    "id": "poza_isla_canela_levante_02",
+    "name": "Poza de la Barra de Levante - Isla Canela",
+    "beach_name": "Isla Canela",
+    "latitude": 37.1812,
+    "longitude": -7.3685,
+    "detection_method": "BREAKER_GAP",
+    "distance_from_shore_m": 75,
+    "width_m": 35,
+    "length_m": 95,
+    "relative_depth_m": 1.6,
+    "confidence_score": 89.0,
+    "target_species": [
+      "Dorada",
+      "Herrera",
+      "Lenguado",
+      "Lubina"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1809, -7.3690],
+      [37.1815, -7.3687],
+      [37.1814, -7.3680],
+      [37.1808, -7.3683]
+    ]
+  },
+  {
+    "id": "poza_isla_cristina_caiman_01",
+    "name": "Fosa de Corriente - Punta del Caimán",
+    "beach_name": "Isla Cristina",
+    "latitude": 37.1952,
+    "longitude": -7.3364,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 65,
+    "width_m": 40,
+    "length_m": 110,
+    "relative_depth_m": 2.1,
+    "confidence_score": 96.0,
+    "target_species": [
+      "Dorada",
+      "Robalo",
+      "Baila",
+      "Herrera",
+      "Sargo"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1949, -7.3370],
+      [37.1956, -7.3366],
+      [37.1954, -7.3358],
+      [37.1947, -7.3362]
+    ]
+  },
+  {
+    "id": "poza_isla_cristina_gaviota_02",
+    "name": "Canalizo Rompiente - Barra de la Gaviota",
+    "beach_name": "Isla Cristina",
+    "latitude": 37.1918,
+    "longitude": -7.3182,
+    "detection_method": "BREAKER_GAP",
+    "distance_from_shore_m": 80,
+    "width_m": 30,
+    "length_m": 85,
+    "relative_depth_m": 1.5,
+    "confidence_score": 88.5,
+    "target_species": [
+      "Herrera",
+      "Dorada",
+      "Lubina",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1915, -7.3187],
+      [37.1921, -7.3184],
+      [37.1920, -7.3177],
+      [37.1914, -7.3180]
+    ]
+  },
+  {
+    "id": "poza_isla_cristina_central_03",
+    "name": "Poza de Resaca Central - Playa Central",
+    "beach_name": "Isla Cristina",
+    "latitude": 37.1908,
+    "longitude": -7.2985,
+    "detection_method": "PNOA_ORTHO",
+    "distance_from_shore_m": 55,
+    "width_m": 25,
+    "length_m": 75,
+    "relative_depth_m": 1.2,
+    "confidence_score": 86.0,
+    "target_species": [
+      "Herrera",
+      "Dorada",
+      "Lenguado",
+      "Raya"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1905, -7.2990],
+      [37.1911, -7.2987],
+      [37.1910, -7.2980],
+      [37.1904, -7.2983]
+    ]
+  },
+  {
+    "id": "poza_redondela_hoyo_01",
+    "name": "Poza de la Segunda Barra - Playa del Hoyo",
+    "beach_name": "La Redondela",
+    "latitude": 37.1968,
+    "longitude": -7.2618,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 110,
+    "width_m": 50,
+    "length_m": 140,
+    "relative_depth_m": 2.2,
+    "confidence_score": 95.0,
+    "target_species": [
+      "Dorada",
+      "Herrera",
+      "Robalo",
+      "Sargo",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1964, -7.2625],
+      [37.1972, -7.2621],
+      [37.1970, -7.2611],
+      [37.1962, -7.2615]
+    ]
+  },
+  {
+    "id": "poza_islantilla_intermareal_02",
+    "name": "Canal de Rompiente de Poniente - Islantilla",
+    "beach_name": "Islantilla",
+    "latitude": 37.2008,
+    "longitude": -7.2345,
+    "detection_method": "BREAKER_GAP",
+    "distance_from_shore_m": 70,
+    "width_m": 35,
+    "length_m": 90,
+    "relative_depth_m": 1.7,
+    "confidence_score": 91.5,
+    "target_species": [
+      "Dorada",
+      "Herrera",
+      "Lubina",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.2004, -7.2350],
+      [37.2012, -7.2347],
+      [37.2010, -7.2339],
+      [37.2002, -7.2342]
+    ]
+  },
+  {
+    "id": "poza_el_terron_flecha_exterior_01",
+    "name": "Foso Exterior de la Flecha - El Rompido",
+    "beach_name": "El Terrón / Cartaya",
+    "latitude": 37.2048,
+    "longitude": -7.1552,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 85,
+    "width_m": 55,
+    "length_m": 150,
+    "relative_depth_m": 2.8,
+    "confidence_score": 97.5,
+    "target_species": [
+      "Dorada",
+      "Corvina",
+      "Robalo",
+      "Lenguado",
+      "Sargo"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.2043, -7.1560],
+      [37.2053, -7.1555],
+      [37.2051, -7.1544],
+      [37.2041, -7.1549]
+    ]
+  },
+  {
+    "id": "poza_cartaya_punta_flecha_02",
+    "name": "Canal de Entrada de Marea - Punta de la Flecha",
+    "beach_name": "Cartaya",
+    "latitude": 37.2095,
+    "longitude": -7.1248,
+    "detection_method": "BREAKER_GAP",
+    "distance_from_shore_m": 60,
+    "width_m": 40,
+    "length_m": 100,
+    "relative_depth_m": 2.0,
+    "confidence_score": 93.0,
+    "target_species": [
+      "Corvina",
+      "Dorada",
+      "Robalo",
+      "Baila"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.2091, -7.1254],
+      [37.2099, -7.1250],
+      [37.2097, -7.1242],
+      [37.2089, -7.1246]
+    ]
+  },
+  {
+    "id": "poza_el_portil_culata_01",
+    "name": "Garganta de Vaciante - Caño de la Culata",
+    "beach_name": "El Portil",
+    "latitude": 37.2138,
+    "longitude": -7.0582,
+    "detection_method": "PNOA_ORTHO",
+    "distance_from_shore_m": 45,
+    "width_m": 30,
+    "length_m": 80,
+    "relative_depth_m": 1.4,
+    "confidence_score": 87.0,
+    "target_species": [
+      "Lubina",
+      "Baila",
+      "Dorada",
+      "Herrera",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.2135, -7.0587],
+      [37.2141, -7.0584],
+      [37.2140, -7.0577],
+      [37.2134, -7.0580]
+    ]
+  },
+  {
+    "id": "poza_el_portil_enebrales_02",
+    "name": "Poza de los Enebrales - Banco Bermejo",
+    "beach_name": "El Portil",
+    "latitude": 37.1998,
+    "longitude": -7.0125,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 105,
+    "width_m": 45,
+    "length_m": 120,
+    "relative_depth_m": 2.0,
+    "confidence_score": 92.0,
+    "target_species": [
+      "Dorada",
+      "Herrera",
+      "Robalo",
+      "Sargo"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1994, -7.0132],
+      [37.2002, -7.0128],
+      [37.2000, -7.0118],
+      [37.1992, -7.0122]
+    ]
+  },
+  {
+    "id": "poza_punta_umbria_canaleta_01",
+    "name": "Poza del Espigón de Poniente - La Canaleta",
+    "beach_name": "Punta Umbría",
+    "latitude": 37.1742,
+    "longitude": -6.9635,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 50,
+    "width_m": 35,
+    "length_m": 105,
+    "relative_depth_m": 2.3,
+    "confidence_score": 95.5,
+    "target_species": [
+      "Dorada",
+      "Corvina",
+      "Robalo",
+      "Baila",
+      "Sargo"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1738, -6.9641],
+      [37.1746, -6.9638],
+      [37.1744, -6.9629],
+      [37.1736, -6.9632]
+    ]
+  },
+  {
+    "id": "poza_punta_umbria_enebrales_rompiente_02",
+    "name": "Rompiente de los Enebrales - Canal de Resaca",
+    "beach_name": "Punta Umbría",
+    "latitude": 37.1882,
+    "longitude": -6.9854,
+    "detection_method": "BREAKER_GAP",
+    "distance_from_shore_m": 90,
+    "width_m": 30,
+    "length_m": 80,
+    "relative_depth_m": 1.5,
+    "confidence_score": 89.5,
+    "target_species": [
+      "Herrera",
+      "Dorada",
+      "Lubina",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.1878, -6.9860],
+      [37.1886, -6.9856],
+      [37.1884, -6.9848],
+      [37.1876, -6.9852]
+    ]
+  },
+  {
+    "id": "poza_mazagon_cuesta_maneli_01",
+    "name": "Canalizo de Resaca Profundo - Cuesta Maneli",
+    "beach_name": "Mazagón",
+    "latitude": 37.0754,
+    "longitude": -6.7482,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 120,
+    "width_m": 50,
+    "length_m": 135,
+    "relative_depth_m": 2.6,
+    "confidence_score": 96.5,
+    "target_species": [
+      "Dorada",
+      "Herrera",
+      "Corvina",
+      "Robalo",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.0750, -6.7489],
+      [37.0758, -6.7485],
+      [37.0756, -6.7475],
+      [37.0748, -6.7479]
+    ]
+  },
+  {
+    "id": "poza_mazagon_asperillo_02",
+    "name": "Poza del Acantilado del Asperillo",
+    "beach_name": "Mazagón",
+    "latitude": 37.0532,
+    "longitude": -6.6924,
+    "detection_method": "PNOA_ORTHO",
+    "distance_from_shore_m": 80,
+    "width_m": 35,
+    "length_m": 90,
+    "relative_depth_m": 1.8,
+    "confidence_score": 91.0,
+    "target_species": [
+      "Dorada",
+      "Herrera",
+      "Sargo",
+      "Robalo"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [37.0528, -6.6931],
+      [37.0536, -6.6927],
+      [37.0534, -6.6917],
+      [37.0526, -6.6921]
+    ]
+  },
+  {
+    "id": "poza_matalascanas_torre_higuera_01",
+    "name": "Canal de Resaca del Tapón - Torre de la Higuera",
+    "beach_name": "Matalascañas",
+    "latitude": 36.9942,
+    "longitude": -6.5394,
+    "detection_method": "BREAKER_GAP",
+    "distance_from_shore_m": 40,
+    "width_m": 28,
+    "length_m": 70,
+    "relative_depth_m": 1.3,
+    "confidence_score": 94.0,
+    "target_species": [
+      "Dorada",
+      "Lubina",
+      "Herrera",
+      "Robalo",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Media marea subiendo",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [36.9939, -6.5399],
+      [36.9945, -6.5396],
+      [36.9944, -6.5389],
+      [36.9938, -6.5392]
+    ]
+  },
+  {
+    "id": "poza_matalascanas_limite_donana_02",
+    "name": "Fosa Litoral Virgen - Límite Parque Nacional Doñana",
+    "beach_name": "Matalascañas",
+    "latitude": 36.9812,
+    "longitude": -6.5052,
+    "detection_method": "SDB_STUMPF",
+    "distance_from_shore_m": 130,
+    "width_m": 60,
+    "length_m": 145,
+    "relative_depth_m": 2.7,
+    "confidence_score": 97.0,
+    "target_species": [
+      "Dorada",
+      "Corvina",
+      "Robalo",
+      "Herrera",
+      "Lenguado"
+    ],
+    "optimal_tide_stage": "Últimas 2h de bajamar y repunte",
+    "satellite_pass_date": "2026-09-17",
+    "coordinates_polygon": [
+      [36.9808, -6.5059],
+      [36.9816, -6.5055],
+      [36.9814, -6.5045],
+      [36.9806, -6.5049]
+    ]
+  }
+]

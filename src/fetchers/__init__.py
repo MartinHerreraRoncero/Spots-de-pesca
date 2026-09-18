@@ -12,6 +12,12 @@ from src.fetchers.open_meteo import (
     get_buoy_telemetry_snapshot,
 )
 
+from src.fetchers.sentinel_satellite import (
+    get_latest_huelva_sentinel_pass,
+    is_cache_fresh,
+    get_huelva_coastal_bounds,
+)
+
 __all__ = [
     "load_spots_from_json",
     "load_marine_buoys_from_json",
@@ -20,4 +26,7 @@ __all__ = [
     "get_spot_hourly_forecast",
     "get_all_spots_snapshot",
     "get_buoy_telemetry_snapshot",
+    "get_latest_huelva_sentinel_pass",
+    "is_cache_fresh",
+    "get_huelva_coastal_bounds",
 ]

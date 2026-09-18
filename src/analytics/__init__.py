@@ -31,6 +31,13 @@ from src.analytics.scoring import (
     calculate_species_scores,
     score_hourly_conditions,
 )
+from src.analytics.poza_detection import (
+    load_pozas_from_json,
+    compute_stumpf_sdb_ratio,
+    evaluate_poza_fishability,
+    filter_pozas,
+    sync_pozas_with_satellite_pass,
+)
 
 __all__ = [
     "get_moon_phase_info",
@@ -49,4 +56,10 @@ __all__ = [
     "calculate_wind_score",
     "calculate_species_scores",
     "score_hourly_conditions",
+    "load_pozas_from_json",
+    "compute_stumpf_sdb_ratio",
+    "evaluate_poza_fishability",
+    "filter_pozas",
+    "sync_pozas_with_satellite_pass",
 ]
+
