@@ -445,28 +445,35 @@ def create_andalucia_fishing_map(
     m = folium.Map(
         location=[center_lat, center_lon],
         zoom_start=zoom,
+        max_zoom=19,
         tiles=None,
         control_scale=True,
         prefer_canvas=True,
     )
 
-    # Base tile layers
+    # Base tile layers (100% free, no API key required, supporting zoom up to 19x)
     folium.TileLayer(
-        tiles="CartoDB positron",
-        name="🗺️ CartoDB Claro (Recomendado)",
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        name="🛰️ Satélite Esri World Imagery (Recomendado)",
+        attr="Esri, Maxar, Earthstar Geographics",
+        max_zoom=19,
+        max_native_zoom=19,
+        control=True,
+    ).add_to(m)
+
+    folium.TileLayer(
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        name="🗺️ Esri Topográfico Claro",
+        attr="Esri, USGS, Garmin",
+        max_zoom=19,
+        max_native_zoom=19,
         control=True,
     ).add_to(m)
 
     folium.TileLayer(
         tiles="OpenStreetMap",
-        name="🌍 OpenStreetMap",
-        control=True,
-    ).add_to(m)
-
-    folium.TileLayer(
-        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        name="🛰️ Satélite Esri World Imagery",
-        attr="Esri, Maxar, Earthstar Geographics",
+        name="🌍 OpenStreetMap (Calles y Accesos)",
+        max_zoom=19,
         control=True,
     ).add_to(m)
 
@@ -477,6 +484,7 @@ def create_andalucia_fishing_map(
         format="image/png",
         transparent=False,
         attr="Instituto Geográfico Nacional (IGN)",
+        max_zoom=19,
         control=True,
     ).add_to(m)
 
