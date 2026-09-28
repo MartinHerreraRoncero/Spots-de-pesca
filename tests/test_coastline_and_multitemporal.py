@@ -58,13 +58,13 @@ class TestCoastlineModule(unittest.TestCase):
         # Inland point (Islantilla promenade / golf: lat=37.2050)
         self.assertFalse(is_in_ocean(lat=37.2050, lon=-7.2345))
 
-        # Test Point 3: Ocean off Cuesta Maneli (-6.7482, 37.0640) -> Shoreline is at 37.0665
+        # Test Point 3: Ocean off Cuesta Maneli (-6.7482, 37.0640) -> Shoreline is at ~37.0988
         self.assertTrue(is_in_ocean(lat=37.0640, lon=-6.7482))
-        # Inland point (Asperillo cliff pine forest: lat=37.0750)
-        self.assertFalse(is_in_ocean(lat=37.0750, lon=-6.7482))
+        # Inland point (Asperillo cliff pine forest: lat=37.1050)
+        self.assertFalse(is_in_ocean(lat=37.1050, lon=-6.7482))
 
-        # Test Point 4: Ocean off Matalascañas (-6.5394, 36.9890) -> Shoreline is at 36.9908
-        self.assertTrue(is_in_ocean(lat=36.9890, lon=-6.5394))
+        # Test Point 4: Ocean off Matalascañas (-6.5394, 36.9800) -> Shoreline is at ~36.9863
+        self.assertTrue(is_in_ocean(lat=36.9800, lon=-6.5394))
         # Inland point (Matalascañas urban center: lat=36.9960)
         self.assertFalse(is_in_ocean(lat=36.9960, lon=-6.5394))
 
@@ -220,10 +220,10 @@ class TestMultiTemporalPersistence(unittest.TestCase):
         poza_matalascanas = next(p for p in pozas if "matalascanas" in p.id)
         poza_islantilla = next(p for p in pozas if "islantilla" in p.id)
 
-        # Shoreline normals along Huelva coast face South (160° - 215°)
+        # Shoreline normals along Huelva coast face South/SSW (160° - 225°)
         normal_mat = get_shoreline_normal_azimuth(poza_matalascanas.longitude)
         self.assertGreaterEqual(normal_mat, 160.0)
-        self.assertLessEqual(normal_mat, 215.0)
+        self.assertLessEqual(normal_mat, 225.0)
 
         # 1. Standard Atlantic WSW swell (235°):
         # Breaker angle alpha_b = 235 - normal > 0, sin(2*alpha_b) > 0 -> Drift to Levante (East)

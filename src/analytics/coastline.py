@@ -11,39 +11,39 @@ from typing import List, Tuple, Dict, Any, Optional
 from src.models.poza import DetectedPoza
 
 
-# High-precision Mean High Water (MHW) shoreline delineation of Costa de Huelva
+# High-precision Mean High Water (MHW) shoreline delineation of Costa de Huelva,
+# calibrated against the OpenStreetMap (natural=coastline) vector.
 # Ordered from West (Desembocadura del Guadiana, Ayamonte) to East (Doñana / Guadalquivir).
-# Longitudes are strictly ascending from -7.4200 to -6.3600.
+# Longitudes are strictly ascending from -7.4375 to -6.3503.
 HUELVA_SHORELINE_VERTICES: List[Tuple[float, float]] = [
     # (lon, lat)
-    (-7.4200, 37.1710),  # Ayamonte / Desembocadura Guadiana (Barra de Poniente)
-    (-7.4082, 37.1735),  # Isla Canela (Playa Grande)
-    (-7.3850, 37.1775),  # Isla Canela Centro
-    (-7.3685, 37.1802),  # Isla Canela / Barra de Levante
-    (-7.3500, 37.1850),  # Ría Carreras (Entrada Isla Cristina)
-    (-7.3364, 37.1938),  # Isla Cristina (Punta del Caimán)
-    (-7.3182, 37.1905),  # Isla Cristina (Barra de la Gaviota)
-    (-7.2985, 37.1892),  # Isla Cristina (Playa Central)
-    (-7.2618, 37.1952),  # La Redondela (Playa del Hoyo)
-    (-7.2345, 37.1988),  # Islantilla / Urbasur
-    (-7.2000, 37.2030),  # Lepe (Playa de Santa Pura)
-    (-7.1552, 37.2025),  # El Terrón / Cartaya (Flecha de El Rompido oeste)
-    (-7.1248, 37.2012),  # Cartaya (Flecha de El Rompido centro)
-    (-7.0950, 37.2020),  # Flecha de El Rompido (Punta de la Flecha)
-    (-7.0582, 37.2070),  # El Portil (Caño de la Culata)
-    (-7.0125, 37.1925),  # El Portil / Los Enebrales (Banco Bermejo)
-    (-6.9854, 37.1805),  # Punta Umbría (Playa de los Enebrales)
-    (-6.9635, 37.1695),  # Punta Umbría (La Canaleta / Espigón de Poniente)
-    (-6.9550, 37.1650),  # Desembocadura Ría de Huelva (Odiel / Tinto)
-    (-6.8350, 37.1320),  # Mazagón (Playa de las Dunas / Puerto)
-    (-6.8000, 37.1100),  # Mazagón (Playa del Parador / Playa de Rompeculos)
-    (-6.7482, 37.0665),  # Acantilado del Asperillo / Cuesta Maneli
-    (-6.6924, 37.0375),  # Acantilado del Asperillo Este
-    (-6.6200, 37.0145),  # Médano del Loro
-    (-6.5394, 36.9908),  # Matalascañas (Torre de la Higuera)
-    (-6.5052, 36.9738),  # Matalascañas Este (Límite Parque Nacional Doñana)
-    (-6.4400, 36.9300),  # Parque Nacional Doñana (Playa de Doñana centro)
-    (-6.3600, 36.8000),  # Punta del Malandar (Frente a Sanlúcar de Barrameda)
+    (-7.437500, 37.176000),  # Ayamonte / Desembocadura Guadiana (Frontera Portugal)
+    (-7.420000, 37.171500),  # Barra de Poniente
+    (-7.408287, 37.170069),  # Isla Canela (Playa Grande / Poniente)
+    (-7.380481, 37.169806),  # Isla Canela (Barra de Levante)
+    (-7.340476, 37.180337),  # Isla Cristina (Punta del Caimán)
+    (-7.322823, 37.190241),  # Isla Cristina (Barra de la Gaviota)
+    (-7.302489, 37.196271),  # Isla Cristina (Playa Central)
+    (-7.264094, 37.202385),  # La Redondela (Playa del Hoyo)
+    (-7.239642, 37.203605),  # Islantilla / Urbasur
+    (-7.158468, 37.207175),  # El Terrón / Cartaya (Flecha de El Rompido oeste)
+    (-7.119670, 37.207640),  # Cartaya (Punta de la Flecha)
+    (-7.062364, 37.204810),  # El Portil (Caño de la Culata)
+    (-7.007517, 37.195643),  # El Portil / Los Enebrales (Banco Bermejo)
+    (-6.981727, 37.183393),  # Punta Umbría (Playa de los Enebrales)
+    (-6.958458, 37.172487),  # Punta Umbría (La Canaleta / Espigón)
+    (-6.900000, 37.148000),  # Mazagón Oeste
+    (-6.850000, 37.127000),  # Mazagón Puerto / Playa de las Dunas
+    (-6.800000, 37.123000),  # Mazagón Parador / Rompeculos
+    (-6.742857, 37.096748),  # Cuesta Maneli / Asperillo
+    (-6.686969, 37.068924),  # Acantilado del Asperillo Este
+    (-6.640000, 37.042000),  # Médano del Loro
+    (-6.590000, 37.019000),  # Playa de Castilla
+    (-6.535137, 36.985046),  # Matalascañas (Torre de la Higuera)
+    (-6.501644, 36.960521),  # Matalascañas Este (Límite Parque Nacional Doñana)
+    (-6.460000, 36.920000),  # Playa de Doñana Centro
+    (-6.400000, 36.815000),  # Dunas Móviles de Doñana Sur
+    (-6.350300, 36.797100),  # Punta del Malandar (Desembocadura Guadalquivir)
 ]
 
 
