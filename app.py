@@ -381,9 +381,9 @@ def main():
     )
 
     only_confirmed_pozas = st.sidebar.checkbox(
-        "🛡️ Solo Pozas Confirmadas (Persistencia ≥ 80%)",
+        "🛡️ Solo Fosos de Alta Estabilidad (Persistencia ≥ 90% / 3 pasadas)",
         value=False,
-        help="Muestra únicamente estructuras estables confirmadas en múltiples pasadas de Sentinel-2 con deriva morfodinámica controlada."
+        help="Muestra únicamente los 13 fosos estables confirmados en 3/3 pasadas consecutivas de Sentinel-2 (excluye canales dinámicos con 2 pasadas)."
     )
 
     method_choices = ["Todos los métodos", "SDB_STUMPF", "BREAKER_GAP", "PNOA_ORTHO"]
@@ -414,7 +414,7 @@ def main():
         synced_pozas,
         method=method_filter_val,
         max_distance=max_cast_dist,
-        min_persistence=80.0 if only_confirmed_pozas else None,
+        min_persistence=90.0 if only_confirmed_pozas else None,
     )
 
     poza_focus_options = ["🔍 Vista General de Huelva (17 Pozas)"] + [

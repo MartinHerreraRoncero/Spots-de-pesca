@@ -892,4 +892,14 @@ def create_andalucia_fishing_map(
 
     folium.LayerControl(position="topright", collapsed=False).add_to(m)
 
+    # Interactive measurement ruler for verifying distances to shoreline and spot spans
+    plugins.MeasureControl(
+        position="topleft",
+        primary_length_unit="meters",
+        secondary_length_unit="kilometers",
+        primary_area_unit="sqmeters",
+        active_color="#0284c7",
+        completed_color="#0369a1",
+    ).add_to(m)
+
     return m
