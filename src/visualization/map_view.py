@@ -492,6 +492,7 @@ def create_andalucia_fishing_map(
         max_zoom=19,
         max_native_zoom=19,
         control=True,
+        show=True,
     ).add_to(m)
 
     folium.TileLayer(
@@ -501,6 +502,7 @@ def create_andalucia_fishing_map(
         max_zoom=19,
         max_native_zoom=19,
         control=True,
+        show=False,
     ).add_to(m)
 
     folium.TileLayer(
@@ -508,6 +510,7 @@ def create_andalucia_fishing_map(
         name="🌍 OpenStreetMap (Calles y Accesos)",
         max_zoom=19,
         control=True,
+        show=False,
     ).add_to(m)
 
     folium.WmsTileLayer(
@@ -519,12 +522,12 @@ def create_andalucia_fishing_map(
         attr="Instituto Geográfico Nacional (IGN)",
         max_zoom=19,
         control=True,
+        overlay=False,
+        show=False,
     ).add_to(m)
 
     # Feature groups
-    fg_excelente = folium.FeatureGroup(name="🟢 Spots Excelentes (> 75)", show=True)
-    fg_muy_bueno = folium.FeatureGroup(name="🟡 Spots Favorables (50 - 74)", show=True)
-    fg_desfavorable = folium.FeatureGroup(name="🔴 Spots Desfavorables (< 50)", show=True)
+    fg_spots = folium.FeatureGroup(name="📍 Spots de Pesca", show=True)
     fg_hotspots = folium.FeatureGroup(name="⛰️ Hotspots Topográficos (Cantiles y Bajos)", show=highlight_hotspots)
     fg_pozas = folium.FeatureGroup(name="🌊 Pozas y Canales Detectados (Satélite)", show=show_pozas)
     fg_coastline = folium.FeatureGroup(name="🏖️ Línea de Costa Satelital (Pleamar MHW)", show=show_coastline)
@@ -606,12 +609,7 @@ def create_andalucia_fishing_map(
                 fill_opacity=0.3,
             ).add_to(m)
 
-        if disp_score >= 75.0:
-            marker.add_to(fg_excelente)
-        elif disp_score >= 50.0:
-            marker.add_to(fg_muy_bueno)
-        else:
-            marker.add_to(fg_desfavorable)
+        marker.add_to(fg_spots)
 
         # If it's a high topographic hotspot, add prominent outer halo and floating badge
         if forecast.score.bathymetry and forecast.score.bathymetry.topographic_hotspot_score >= 68.0:
@@ -894,14 +892,12 @@ def create_andalucia_fishing_map(
                 tooltip=tooltip_html,
             ).add_to(fg_pozas)
 
-    # Layer order: Rivers, Buoys, Coastline, and Hotspots first; Pozas last so they are topmost
+    # Layer order: Rivers, Buoys, Coastline, and Hotspots first; Spots and Pozas on top
     fg_rivers.add_to(m)
     fg_buoys.add_to(m)
     fg_coastline.add_to(m)
     fg_hotspots.add_to(m)
-    fg_excelente.add_to(m)
-    fg_muy_bueno.add_to(m)
-    fg_desfavorable.add_to(m)
+    fg_spots.add_to(m)
     fg_pozas.add_to(m)
 
     folium.LayerControl(position="topright", collapsed=False).add_to(m)
