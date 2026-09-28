@@ -902,4 +902,13 @@ def create_andalucia_fishing_map(
         completed_color="#0369a1",
     ).add_to(m)
 
+    # GPS Geolocation button for anglers standing on the beach
+    plugins.LocateControl(
+        position="topleft",
+        strings={"title": "📍 Mi Ubicación GPS en la Playa", "popup": "Estás aquí (Posición GPS a pie de playa)"},
+        flyTo=True,
+        keepCurrentZoomLevel=False,
+        locateOptions={"enableHighAccuracy": True, "maxZoom": 16},
+    ).add_to(m)
+
     return m

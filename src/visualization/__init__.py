@@ -16,6 +16,7 @@ from src.visualization.charts import (
     create_score_radar_chart,
     create_species_comparison_chart,
     create_top_spots_bar_chart,
+    create_continuous_tide_chart,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "create_score_radar_chart",
     "create_species_comparison_chart",
     "create_top_spots_bar_chart",
+    "create_continuous_tide_chart",
 ]

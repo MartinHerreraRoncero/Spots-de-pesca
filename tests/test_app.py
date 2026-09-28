@@ -37,6 +37,7 @@ from src.analytics.scoring import (
     calculate_pressure_score,
     calculate_marine_score,
     score_hourly_conditions,
+    calculate_golden_bite_window,
 )
 from src.visualization.map_view import (
     create_andalucia_fishing_map,
@@ -52,6 +53,7 @@ from src.visualization.charts import (
     create_score_radar_chart,
     create_species_comparison_chart,
     create_top_spots_bar_chart,
+    create_continuous_tide_chart,
 )
 
 
@@ -318,6 +320,28 @@ class TestAndaluciaFishingAppScientific(unittest.TestCase):
         rendered = m.get_root().render()
         self.assertIn("#facc15", rendered)  # Focused gold ring/badge
         self.assertIn(str(p0.distance_from_shore_m), rendered)
+
+    def test_calculate_golden_bite_window(self):
+        """Tests that golden bite window accurately evaluates biological coincidence."""
+        spots = load_spots_from_json()
+        s0 = spots[0]
+        fc = get_spot_hourly_forecast(s0, forecast_days=1)[0]
+        golden = calculate_golden_bite_window(fc.score, fc.marine, fc.weather, fc.solunar_summary)
+        self.assertIsInstance(golden, dict)
+        self.assertIn("golden_score", golden)
+        self.assertIn("status_label", golden)
+        self.assertIn("factors_met", golden)
+        self.assertGreaterEqual(golden["golden_score"], 0.0)
+        self.assertLessEqual(golden["golden_score"], 100.0)
+
+    def test_create_continuous_tide_chart(self):
+        """Tests that sinusoidal continuous tide chart generates valid Plotly figure."""
+        spots = load_spots_from_json()
+        s0 = spots[0]
+        fc_list = get_spot_hourly_forecast(s0, forecast_days=2)
+        fig = create_continuous_tide_chart(fc_list, selected_time=fc_list[0].timestamp)
+        self.assertIsNotNone(fig)
+        self.assertGreater(len(fig.data), 0)
 
     def test_app_py_syntax(self):
         """Verifies app.py compiles cleanly without SyntaxErrors."""

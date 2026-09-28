@@ -30,6 +30,7 @@ from src.analytics.scoring import (
     calculate_wind_score,
     calculate_species_scores,
     score_hourly_conditions,
+    calculate_golden_bite_window,
 )
 from src.analytics.poza_detection import (
     load_pozas_from_json,
@@ -39,6 +40,8 @@ from src.analytics.poza_detection import (
     sync_pozas_with_satellite_pass,
     contrast_multi_temporal_pozas,
     calculate_deterministic_littoral_drift,
+    recommend_surfcasting_rig,
+    calculate_optimal_time_window_today,
 )
 from src.analytics.coastline import (
     compute_ndwi,
@@ -70,6 +73,7 @@ __all__ = [
     "calculate_wind_score",
     "calculate_species_scores",
     "score_hourly_conditions",
+    "calculate_golden_bite_window",
     "load_pozas_from_json",
     "compute_stumpf_sdb_ratio",
     "evaluate_poza_fishability",
@@ -77,6 +81,8 @@ __all__ = [
     "sync_pozas_with_satellite_pass",
     "contrast_multi_temporal_pozas",
     "calculate_deterministic_littoral_drift",
+    "recommend_surfcasting_rig",
+    "calculate_optimal_time_window_today",
     "compute_ndwi",
     "compute_mndwi",
     "get_shoreline_lat_at_lon",

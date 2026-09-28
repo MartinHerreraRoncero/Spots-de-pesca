@@ -50,6 +50,10 @@ def test_map_base_layers_and_layer_control():
     osm_coords = get_huelva_shoreline_folium_coords()
     assert len(osm_coords) >= 900, f"Expected >= 900 OSM coastline points, got {len(osm_coords)}"
 
+    # 6. Check interactive Leaflet MeasureControl and GPS LocateControl are attached to map
+    assert "measure" in html.lower(), "Expected MeasureControl in map HTML"
+    assert "locate" in html.lower(), "Expected LocateControl in map HTML"
+
 def test_app_and_methodology_file():
     # 1. METODOLOGIA_Y_FUNDAMENTOS.md exists and is populated
     md_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "METODOLOGIA_Y_FUNDAMENTOS.md")

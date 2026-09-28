@@ -46,6 +46,7 @@ except (ImportError, AttributeError):
     from src.fetchers.sentinel_satellite import get_latest_huelva_sentinel_pass
     def get_huelva_sentinel_series(passes_count: int = 3, force_refresh: bool = False):
         return [get_latest_huelva_sentinel_pass(force_refresh=force_refresh)]
+from src.analytics.scoring import calculate_golden_bite_window
 from src.analytics.solunar import compute_daily_solunar
 from src.analytics.river_runoff import load_rivers_catalog
 from src.analytics.bathymetry import calculate_bathymetry_profile
@@ -57,6 +58,8 @@ from src.analytics.poza_detection import (
     sync_pozas_with_satellite_pass,
     contrast_multi_temporal_pozas,
     evaluate_poza_fishability,
+    recommend_surfcasting_rig,
+    calculate_optimal_time_window_today,
 )
 import src.visualization.map_view
 importlib.reload(src.visualization.map_view)
@@ -71,6 +74,7 @@ from src.visualization.charts import (
     create_score_radar_chart,
     create_species_comparison_chart,
     create_top_spots_bar_chart,
+    create_continuous_tide_chart,
 )
 
 # Page configuration
@@ -400,19 +404,30 @@ def main():
         index=0,
     )
 
-    max_cast_dist = st.sidebar.slider(
-        "Distancia máxima de lance (m)",
+    cast_dist_range = st.sidebar.slider(
+        "Rango de distancia de lance deseado (m):",
         min_value=20,
         max_value=130,
-        value=130,
+        value=(20, 130),
         step=5,
-        help="Filtra pozas y canales según el alcance de lance de surfcasting desde la orilla (rango costero 20-130m)."
+        help="Filtra pozas según la distancia de lance deseada (ej. 20-70m para caña corta o 90-130m para lances de surfcasting largo)."
     )
+    min_cast_dist, max_cast_dist = cast_dist_range
+
+    map_height_mode = st.sidebar.radio(
+        "📐 Altura del Mapa:",
+        options=["Estándar (580px)", "Ampliado (720px)", "Inmersivo (880px)"],
+        index=0,
+        horizontal=True,
+        help="Ajusta la altura del mapa interactivo para adaptarse a pantallas grandes o dispositivos móviles."
+    )
+    map_height = 580 if "580" in map_height_mode else (720 if "720" in map_height_mode else 880)
 
     method_filter_val = None if selected_method == "Todos los métodos" else selected_method
     filtered_pozas = filter_pozas(
         synced_pozas,
         method=method_filter_val,
+        min_distance=min_cast_dist,
         max_distance=max_cast_dist,
         min_persistence=90.0 if only_confirmed_pozas else None,
     )
@@ -570,6 +585,43 @@ def main():
             </div>
             """, unsafe_allow_html=True)
 
+        # Calculate Golden Bite Window / Momento de Oro for top/reference spot
+        ref_spot_kpi, ref_fc_kpi = spots_snapshot[0]
+        golden_kpi = calculate_golden_bite_window(
+            ref_fc_kpi.score,
+            ref_fc_kpi.marine,
+            ref_fc_kpi.weather,
+            ref_fc_kpi.solunar_summary,
+        )
+
+        golden_bg = "linear-gradient(135deg, #fefce8 0%, #fef08a 100%)" if golden_kpi["is_golden"] else (
+            "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" if golden_kpi["is_favorable"] else "#f8fafc"
+        )
+        golden_border = "#eab308" if golden_kpi["is_golden"] else ("#22c55e" if golden_kpi["is_favorable"] else "#cbd5e1")
+        golden_badge_bg = "#ca8a04" if golden_kpi["is_golden"] else ("#16a34a" if golden_kpi["is_favorable"] else "#64748b")
+        golden_factors_html = "".join(
+            f"<span style='background:rgba(255,255,255,0.85); color:#1e293b; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; border:1px solid {golden_border};'>{f}</span>"
+            for f in golden_kpi["factors_met"]
+        )
+
+        st.markdown(f"""
+        <div style='background: {golden_bg}; border: 1.5px solid {golden_border}; border-radius: 10px; padding: 12px 18px; margin: 12px 0 16px 0;'>
+            <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;'>
+                <div style='display:flex; align-items:center; gap:8px;'>
+                    <span style='font-size:18px;'>{"🌟" if golden_kpi["is_golden"] else ("⚡" if golden_kpi["is_favorable"] else "🧭")}</span>
+                    <span style='color: #0f172a; font-weight: 800; font-size: 14px;'>RADAR DE COINCIDENCIA BIOLÓGICA: {golden_kpi["status_label"]}</span>
+                </div>
+                <span style='background:{golden_badge_bg}; color:white; padding:3px 10px; border-radius:12px; font-size:11.5px; font-weight:700;'>
+                    Alineación: {golden_kpi["golden_score"]:.0f}/100
+                </span>
+            </div>
+            <div style='color: #334155; font-size: 12.5px; margin-top: 4px; line-height:1.4;'>
+                {golden_kpi["summary"]}
+            </div>
+            {f"<div style='display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;'>{golden_factors_html}</div>" if golden_factors_html else ""}
+        </div>
+        """, unsafe_allow_html=True)
+
     # --- MAIN TABS ---
     tab_map, tab_detail, tab_buoys = st.tabs([
         "🗺️ Mapa Interactivo & Clic",
@@ -667,7 +719,7 @@ def main():
         map_output = st_folium(
             folium_map,
             width=None,
-            height=580,
+            height=map_height,
             returned_objects=["last_clicked", "last_object_clicked"],
         )
 
@@ -688,6 +740,9 @@ def main():
         if show_pozas and filtered_pozas and selected_subzone_key == "Costa de Huelva":
             with st.expander(f"📋 Ver Catálogo Completo de las {len(filtered_pozas)} Pozas Detectadas por Satélite en Huelva", expanded=False):
                 pozas_rows = []
+                ref_next_high = ref_fc.score.tide_state.next_high_tide if ref_fc and ref_fc.score and ref_fc.score.tide_state else None
+                ref_next_low = ref_fc.score.tide_state.next_low_tide if ref_fc and ref_fc.score and ref_fc.score.tide_state else None
+                ref_secchi = ref_fc.score.water_clarity.secchi_depth_m if ref_fc and ref_fc.score and ref_fc.score.water_clarity else 2.0
                 for p in filtered_pozas:
                     p_eval = evaluate_poza_fishability(
                         poza=p,
@@ -695,7 +750,12 @@ def main():
                         tide_coeff=curr_tide_coeff,
                         wave_height_m=curr_wave_h,
                         current_speed_knots=curr_knots,
+                        next_high_tide=ref_next_high,
+                        next_low_tide=ref_next_low,
+                        target_dt=target_dt,
+                        secchi_depth_m=ref_secchi,
                     )
+                    rig_dict = p_eval.get("recommended_rig", {})
                     pozas_rows.append({
                         "Playa / Sector": p.beach_name,
                         "Nombre del Foso / Poza": p.name,
@@ -703,12 +763,13 @@ def main():
                         "Foso": f"+{p.relative_depth_m} m",
                         "Dimensiones": f"{p.width_m}x{p.length_m} m",
                         "Score Actual": f"{p_eval['fishability_score']:.0f}/100",
+                        "Ventana Pico Hoy": p_eval.get("optimal_time_window_today", p.optimal_tide_stage),
+                        "Montaje Sugerido": rig_dict.get("rig_name", "Urfe corto").split("(")[0].strip(),
+                        "Plomo": rig_dict.get("lead_type", f"{p_eval['recommended_lead_g']}g").split("(")[0].strip(),
                         "Persistencia": f"{p.persistence_score:.0f}% ({p.temporal_passes_count}/3 pasadas)",
                         "Deriva Litoral": f"~{p.drift_offset_m:.1f} m",
                         "Estabilidad": p.morphodynamic_stability.split("(")[0].strip(),
                         "Línea de Costa": f"🌊 Mar ({p.distance_from_shore_m}m)",
-                        "Marea Óptima": p.optimal_tide_stage,
-                        "Método": p.detection_method,
                         "Especies": ", ".join(p.target_species[:3]),
                     })
                 df_pozas = pd.DataFrame(pozas_rows)
@@ -834,6 +895,37 @@ def main():
                 with tip_cols[i]:
                     st.info(tip)
 
+        # Tactical Rig and Terminal Recommendation Card
+        spot_rig = recommend_surfcasting_rig(
+            wave_height_m=m.wave_height,
+            current_speed_knots=m.current_velocity_knots,
+            secchi_depth_m=clarity.secchi_depth_m if clarity else 2.0,
+            target_species=active_spot_obj.target_species,
+        )
+
+        st.markdown(f"""
+        <div style='background: #f8fafc; border: 1.5px solid #cbd5e1; border-left: 6px solid #0284c7; border-radius: 8px; padding: 14px 18px; margin: 16px 0;'>
+            <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 6px;'>
+                <span style='color: #0f172a; font-weight: 800; font-size: 13.5px;'>🎣 RECOMENDACIÓN DE MONTAJE Y TERMINAL (A Pie de Playa):</span>
+                <b style='background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-size:11px;'>Táctica Hidrodinámica</b>
+            </div>
+            <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 12px; color: #334155; margin-top: 8px;'>
+                <div>
+                    <b>🔘 Tipo de Plomo:</b> {spot_rig['lead_type']}<br>
+                    <span style='font-size:11px; color:#64748b;'>{spot_rig['lead_advice']}</span>
+                </div>
+                <div>
+                    <b>🪢 Montaje / Bajo:</b> {spot_rig['rig_name']}<br>
+                    <span style='font-size:11px; color:#64748b;'>{spot_rig['rig_desc']}</span>
+                </div>
+                <div>
+                    <b>🧵 Cameta Fluorocarbono:</b> {spot_rig['fluorocarbon']}<br>
+                    <span style='font-size:11px; color:#64748b;'>{spot_rig['fluoro_desc']}</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
         # Species Comparison Bar Chart
         fig_species = create_species_comparison_chart(sc.species_scores)
         st.plotly_chart(fig_species, use_container_width=True)
@@ -845,6 +937,10 @@ def main():
         # Marine & Wind Chart
         fig_marine = create_marine_and_wind_chart(spot_forecasts, selected_time=target_dt)
         st.plotly_chart(fig_marine, use_container_width=True)
+
+        # Continuous Tidal Wave Chart
+        fig_tide = create_continuous_tide_chart(spot_forecasts, selected_time=target_dt)
+        st.plotly_chart(fig_tide, use_container_width=True)
 
         col_radar, col_solunar = st.columns([1, 1])
 
@@ -874,8 +970,11 @@ def main():
         for f in spot_forecasts[:24]:
             val_hour, _ = get_display_score_for_mode(f.score, selected_species_mode)
             clarity_val = f.score.water_clarity.clarity_class.split('(')[0].strip() if f.score.water_clarity else "—"
+            gold_h = calculate_golden_bite_window(f.score, f.marine, f.weather, f.solunar_summary)
+            gold_tag = "⭐ PICO" if gold_h["is_golden"] else ("⚡ Bueno" if gold_h["is_favorable"] else "—")
             table_records.append({
                 "Hora (UTC)": f.timestamp.strftime("%d/%m %H:00"),
+                "Ventana Oro": gold_tag,
                 f"Score ({species_mode_options[selected_species_mode].split()[1]})": f"{val_hour:.0f}",
                 "Score Global": f"{f.score.overall_score:.0f}",
                 "Presión (hPa)": f"{f.weather.surface_pressure:.1f}",

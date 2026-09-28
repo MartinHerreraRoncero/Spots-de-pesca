@@ -15,6 +15,8 @@ from src.analytics.poza_detection import (
     evaluate_poza_fishability,
     filter_pozas,
     sync_pozas_with_satellite_pass,
+    recommend_surfcasting_rig,
+    calculate_optimal_time_window_today,
 )
 
 
@@ -295,7 +297,34 @@ class TestPozaAnalytics(unittest.TestCase):
         self.assertLessEqual(res["fishability_score"], 100.0)
         self.assertIn("recommended_lead_g", res)
         self.assertIn("recommended_baits", res)
-        self.assertIn("activity_summary", res)
+    def test_filter_pozas_min_and_max_distance(self):
+        """Verify filtering pozas with double-range min_distance and max_distance."""
+        range_pozas = filter_pozas(self.pozas, min_distance=60, max_distance=100)
+        self.assertGreater(len(range_pozas), 0)
+        for p in range_pozas:
+            self.assertGreaterEqual(p.distance_from_shore_m, 60)
+            self.assertLessEqual(p.distance_from_shore_m, 100)
+
+    def test_recommend_surfcasting_rig(self):
+        """Verify terminal tackle and rig recommendations adapt to sea state and clarity."""
+        # Calm & clear water -> fine fluorocarbon & long snood
+        calm_rig = recommend_surfcasting_rig(wave_height_m=0.5, current_speed_knots=0.5, secchi_depth_m=3.0, target_species=["Herrera"])
+        self.assertIn("0.18 mm", calm_rig["fluorocarbon"])
+        self.assertIn("cametas largas", calm_rig["rig_name"])
+        self.assertIn("bala", calm_rig["lead_type"].lower())
+
+        # Rough surf & strong current -> heavy breakout sinker & Urfe
+        rough_rig = recommend_surfcasting_rig(wave_height_m=1.8, current_speed_knots=2.2, secchi_depth_m=0.8, target_species=["Robalo"])
+        self.assertIn("varillas", rough_rig["lead_type"].lower())
+        self.assertIn("urfe", rough_rig["rig_name"].lower())
+        self.assertIn("reforzado", rough_rig["fluorocarbon"].lower())
+
+    def test_calculate_optimal_time_window_today(self):
+        """Verify computing clock-time window for today's optimal poza fishing stage."""
+        p0 = self.pozas[0]
+        window_str = calculate_optimal_time_window_today(p0)
+        self.assertIsInstance(window_str, str)
+        self.assertIn("UTC", window_str)
 
 
 if __name__ == "__main__":

@@ -574,3 +574,97 @@ def score_hourly_conditions(
         river_runoff=river_runoff,
         tactical_tips=all_tips[:5],
     )
+
+
+def calculate_golden_bite_window(
+    score_breakdown: ScoreBreakdown,
+    marine: MarineConditions,
+    weather: WeatherConditions,
+    solunar: Optional[SolunarDaySummary] = None,
+) -> Dict[str, Any]:
+    """
+    Evaluates whether the current moment meets the biological alignment
+    of a 'Momento de Oro' (Golden Bite Window):
+    1. Active Solunar Window (Major/Minor or crepuscular overlap)
+    2. Active Tidal Movement (High coefficient 65-100 and active rising/falling stage)
+    3. Favorable Wind Aspect (Gentle wind < 18 km/h or offshore/parallel)
+    4. Optimal Wave Energy (0.4m to 1.3m breaker height)
+    """
+    factors_met = []
+    points = 0.0
+
+    # 1. Solunar factor (max 25 pts)
+    if score_breakdown.solunar_window_active:
+        points += 25.0
+        factors_met.append(f"⭐ Período Solunar Activo ({score_breakdown.solunar_window_active})")
+    elif score_breakdown.is_crepuscular_overlap:
+        points += 20.0
+        factors_met.append("🌅 Ventana Crepuscular Dorada (Amanecer / Ocaso)")
+    elif score_breakdown.solunar_score >= 70.0:
+        points += 15.0
+        factors_met.append("🌙 Influencia Gravitacional Lunar Fuerte")
+
+    # 2. Tide movement factor (max 25 pts)
+    coef = score_breakdown.tide_state.coefficient
+    is_slack = score_breakdown.tide_state.is_slack_water
+    if 65 <= coef <= 100 and not is_slack:
+        points += 25.0
+        factors_met.append(f"🌊 Marea Viva en Movimiento (Coef. {coef})")
+    elif 55 <= coef <= 105:
+        points += 18.0
+        factors_met.append(f"🌊 Marea Moderada (Coef. {coef})")
+
+    # 3. Wind aspect factor (max 25 pts)
+    w_speed = float(weather.wind_speed_10m or 10.0)
+    w_asp = score_breakdown.wind_aspect
+    if w_speed <= 14.0 or w_asp.is_offshore:
+        points += 25.0
+        factors_met.append(f"🍃 Viento Óptimo ({w_speed:.0f} km/h • {w_asp.wind_type.split()[0]})")
+    elif w_speed <= 20.0:
+        points += 16.0
+        factors_met.append(f"🍃 Viento Manejable ({w_speed:.0f} km/h)")
+
+    # 4. Wave Breaker Energy (max 25 pts)
+    wave_h = float(marine.wave_height or 0.8)
+    if 0.5 <= wave_h <= 1.25:
+        points += 25.0
+        factors_met.append(f"🌊 Rompiente Franca y Oxigenada (Hs {wave_h:.2f}m)")
+    elif 0.3 <= wave_h < 0.5 or 1.25 < wave_h <= 1.7:
+        points += 15.0
+        factors_met.append(f"🌊 Oleaje en Rango Aceptable (Hs {wave_h:.2f}m)")
+
+    # Structural bonus (+5 pts if in structural hotspot)
+    if score_breakdown.bathymetry and score_breakdown.bathymetry.topographic_hotspot_score >= 70.0:
+        points += 5.0
+        factors_met.append("⛰️ Fondo con Relieve Submarino Destacado")
+
+    final_score = round(min(100.0, points), 1)
+    is_golden = bool(final_score >= 75.0)
+    is_favorable = bool(final_score >= 55.0)
+
+    if is_golden:
+        status_label = "🌟 ¡MOMENTO DE ORO ACTIVO!"
+        status_tier = "GOLDEN"
+        color = "#eab308"
+        summary = "Alineación simultánea de factores biológicos clave. Máxima probabilidad de picada y actividad de peces."
+    elif is_favorable:
+        status_label = "⚡ Ventana Favorable en Marcha"
+        status_tier = "FAVORABLE"
+        color = "#10b981"
+        summary = "Condiciones muy positivas con varios factores alineados. Momento propicio para tentar capturas."
+    else:
+        status_label = "Actividad Estándar"
+        status_tier = "STANDARD"
+        color = "#64748b"
+        summary = "Condiciones regulares. Conviene ajustar cebos y técnica a la espera del próximo cambio de marea o ventana solunar."
+
+    return {
+        "is_golden": is_golden,
+        "is_favorable": is_favorable,
+        "golden_score": final_score,
+        "status_label": status_label,
+        "status_tier": status_tier,
+        "color": color,
+        "factors_met": factors_met,
+        "summary": summary,
+    }

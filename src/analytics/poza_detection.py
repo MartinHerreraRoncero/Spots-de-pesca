@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+from datetime import datetime, timezone, timedelta
 from dataclasses import replace
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -111,12 +112,115 @@ def compute_stumpf_sdb_ratio(
     return round(max(0.0, depth), 2)
 
 
+def recommend_surfcasting_rig(
+    wave_height_m: float = 0.8,
+    current_speed_knots: float = 1.0,
+    secchi_depth_m: float = 2.0,
+    target_species: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """
+    Recommends specific surfcasting terminal tackle, rig geometry, sinker type,
+    and fluorocarbon hook length based on prevailing hydrodynamic and optical conditions.
+
+    Args:
+        wave_height_m: Significant wave breaker height in meters.
+        current_speed_knots: Littoral/channel current velocity in knots.
+        secchi_depth_m: Optical water clarity depth in meters.
+        target_species: Optional list of target fish species.
+
+    Returns:
+        Dict[str, str]: Contains 'lead_type', 'lead_advice', 'rig_name', 'rig_desc', 'fluorocarbon', 'fluoro_desc'.
+    """
+    target_sp = [s.lower() for s in (target_species or [])]
+    has_dorada = any("dorada" in s for s in target_sp)
+    has_herrera = any("herrera" in s for s in target_sp)
+    has_robalo = any("robalo" in s or "lubina" in s or "baila" in s for s in target_sp)
+    has_corvina = any("corvina" in s for s in target_sp)
+
+    # 1. Lead / Sinker Type & Weight
+    if current_speed_knots >= 2.0 or wave_height_m >= 1.6:
+        lead_type = "Plomo de varillas / grapas abatibles (140 - 150g)"
+        lead_advice = "Fijación estricta al fondo para contrarrestar fuerte deriva lateral y resaca marina."
+    elif current_speed_knots >= 1.2 or wave_height_m >= 1.1:
+        lead_type = "Plomo de bola estriada, pirámide o golf con alas (130 - 140g)"
+        lead_advice = "Agarre medio en arena con buena estabilidad para no liar las cametas."
+    else:
+        lead_type = "Plomo bala aerodinámico / varilla corrida (115 - 125g)"
+        lead_advice = "Máxima penetración de lance y deslizamiento suave en arena limpia."
+
+    # 2. Rig Architecture
+    if wave_height_m >= 1.3 or has_robalo:
+        rig_name = "Montaje Urfe corto con 1 solo anzuelo (remontado o rastrero)"
+        rig_desc = "Cameta única de 1.4 - 1.8m por encima del plomo. Evita enredos en rompiente violenta y presenta el cebo a media agua para róbalo/lubina."
+    elif has_herrera or (current_speed_knots < 1.0 and wave_height_m < 0.9):
+        rig_name = "Bajo de 2 o 3 cametas largas (1.8m - 2.0m) con micro-rolling"
+        rig_desc = "Presentación natural con perlas flotantes discretas y cebo vermiforme rastrero para herrera y lenguado."
+    elif has_dorada or has_corvina:
+        rig_name = "Bajo corrido tradicional o Urfe con cameta extra-larga (2.2m)"
+        rig_desc = "Cero resistencia a la picada desconfiada de la dorada grande o corvina, con cebo posado firme en la cubeta."
+    else:
+        rig_name = "Bajo estándar de 2 cametas (1.2m) al 0.26mm con emerillón triple"
+        rig_desc = "Montaje polivalente para buscar actividad mixta a dos alturas dentro del foso."
+
+    # 3. Fluorocarbon Hooklength (Cameta)
+    if secchi_depth_m >= 2.5:
+        fluorocarbon = "0.18 mm – 0.22 mm (Fluorocarbono 100% invisible)"
+        fluoro_desc = "Imprescindible por aguas cristalinas y desconfianza en horario diurno."
+    elif secchi_depth_m <= 1.0:
+        fluorocarbon = "0.28 mm – 0.35 mm (Fluorocarbono reforzado anti-abrasión)"
+        fluoro_desc = "Agua tomada o turbia: prima la resistencia contra conchas sin penalizar picadas."
+    else:
+        fluorocarbon = "0.23 mm – 0.26 mm (Equilibrio óptimo resistencia / discreción)"
+        fluoro_desc = "Diámetro todoterreno para surfcasting en Huelva y Golfo de Cádiz."
+
+    return {
+        "lead_type": lead_type,
+        "lead_advice": lead_advice,
+        "rig_name": rig_name,
+        "rig_desc": rig_desc,
+        "fluorocarbon": fluorocarbon,
+        "fluoro_desc": fluoro_desc,
+    }
+
+
+def calculate_optimal_time_window_today(
+    poza: DetectedPoza,
+    next_high_tide: Optional[datetime] = None,
+    next_low_tide: Optional[datetime] = None,
+    target_dt: Optional[datetime] = None,
+) -> str:
+    """
+    Computes the specific clock-time window for today when this poza's optimal tide stage occurs.
+    """
+    opt = str(poza.optimal_tide_stage or "").lower()
+    now_ref = target_dt or datetime.now(timezone.utc)
+    if now_ref.tzinfo is None:
+        now_ref = now_ref.replace(tzinfo=timezone.utc)
+
+    if any(k in opt for k in ["bajamar", "baja", "vaciante", "repunte de bajamar"]):
+        ref_t = next_low_tide or (now_ref + timedelta(hours=3))
+        start_w = ref_t - timedelta(hours=2)
+        end_w = ref_t + timedelta(hours=1)
+        stage_lbl = "Repunte de Bajamar"
+    else:
+        ref_t = next_high_tide or (now_ref + timedelta(hours=3))
+        start_w = ref_t - timedelta(hours=2, minutes=30)
+        end_w = ref_t + timedelta(minutes=45)
+        stage_lbl = "Llenante hacia Pleamar"
+
+    return f"{start_w.strftime('%H:%M')} a {end_w.strftime('%H:%M')} UTC ({stage_lbl})"
+
+
 def evaluate_poza_fishability(
     poza: DetectedPoza,
     tide_state_name: Optional[str] = "Pleamar",
     tide_coeff: Optional[float] = 75.0,
     wave_height_m: Optional[float] = 0.8,
     current_speed_knots: Optional[float] = 1.0,
+    next_high_tide: Optional[datetime] = None,
+    next_low_tide: Optional[datetime] = None,
+    target_dt: Optional[datetime] = None,
+    secchi_depth_m: Optional[float] = 2.0,
 ) -> Dict[str, Any]:
     """
     Evaluates current tactical fishability of a coastal poza/channel based on real-time
@@ -313,12 +417,27 @@ def evaluate_poza_fishability(
             f"fuera de su ventana pico ({poza.optimal_tide_stage}). Posibles capturas selectivas a media distancia."
         )
 
+    rig_info = recommend_surfcasting_rig(
+        wave_height_m=wave_h,
+        current_speed_knots=current_kn,
+        secchi_depth_m=float(secchi_depth_m if secchi_depth_m is not None else 2.0),
+        target_species=poza.target_species,
+    )
+    opt_window = calculate_optimal_time_window_today(
+        poza=poza,
+        next_high_tide=next_high_tide,
+        next_low_tide=next_low_tide,
+        target_dt=target_dt,
+    )
+
     return {
         "fishability_score": fishability_score,
         "activity_summary": activity_summary,
         "recommended_lead_g": recommended_lead_g,
         "recommended_baits": recommended_baits,
         "is_optimal_now": is_optimal_now,
+        "optimal_time_window_today": opt_window,
+        "recommended_rig": rig_info,
     }
 
 
@@ -327,10 +446,11 @@ def filter_pozas(
     beach: Optional[str] = None,
     method: Optional[str] = None,
     max_distance: Optional[int] = None,
+    min_distance: Optional[int] = None,
     min_persistence: Optional[float] = None,
 ) -> List[DetectedPoza]:
     """
-    Filters detected pozas by beach name, detection methodology, maximum casting distance,
+    Filters detected pozas by beach name, detection methodology, casting distance range [min, max],
     and minimum multi-temporal persistence score.
 
     Args:
@@ -338,6 +458,7 @@ def filter_pozas(
         beach: Optional beach name or substring (case-insensitive).
         method: Optional detection method ("SDB_STUMPF", "BREAKER_GAP", "PNOA_ORTHO").
         max_distance: Optional maximum distance from shore in meters.
+        min_distance: Optional minimum distance from shore in meters.
         min_persistence: Optional minimum persistence score (e.g. 80.0 for 80%).
 
     Returns:
@@ -355,6 +476,11 @@ def filter_pozas(
         # Filter by method
         if method:
             if poza.detection_method.strip().upper() != method.strip().upper():
+                continue
+
+        # Filter by min distance from shore
+        if min_distance is not None:
+            if poza.distance_from_shore_m < min_distance:
                 continue
 
         # Filter by max distance from shore

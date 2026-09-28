@@ -502,3 +502,111 @@ def create_top_spots_bar_chart(
     )
 
     return fig
+
+
+def create_continuous_tide_chart(
+    forecasts: List[HourlySpotForecast],
+    selected_time: Optional[datetime] = None,
+    height: int = 320,
+) -> go.Figure:
+    """
+    Creates a continuous sinusoidal tidal oscillation curve showing water level height (m),
+    Pleamar peaks with coefficients, Bajamar troughs, and an indicator line for the selected time.
+    """
+    if not forecasts:
+        return go.Figure()
+
+    times = [f.timestamp for f in forecasts]
+    heights = [round(f.score.tide_state.tide_height_est_m, 2) for f in forecasts]
+    coeffs = [f.score.tide_state.coefficient for f in forecasts]
+
+    fig = go.Figure()
+
+    # Continuous water level wave
+    fig.add_trace(go.Scatter(
+        x=times,
+        y=heights,
+        mode="lines",
+        name="Altura Marea (m)",
+        line=dict(color="#0284c7", width=3, shape="spline"),
+        fill="tozeroy",
+        fillcolor="rgba(186, 230, 253, 0.45)",
+        hovertemplate="<b>%{x|%d/%m %H:00 UTC}</b><br>Nivel de marea: <b>%{y:.2f} m</b><extra></extra>",
+    ))
+
+    # Detect high and low peaks
+    for i in range(1, len(heights) - 1):
+        if heights[i] >= heights[i - 1] and heights[i] >= heights[i + 1] and heights[i] > 1.2:
+            fig.add_trace(go.Scatter(
+                x=[times[i]],
+                y=[heights[i]],
+                mode="markers+text",
+                marker=dict(symbol="triangle-up", size=10, color="#0369a1"),
+                text=[f"Pleamar ({coeffs[i]})"],
+                textposition="top center",
+                textfont=dict(size=10, color="#075985"),
+                showlegend=False,
+                hoverinfo="skip",
+            ))
+        elif heights[i] <= heights[i - 1] and heights[i] <= heights[i + 1] and heights[i] < 1.0:
+            fig.add_trace(go.Scatter(
+                x=[times[i]],
+                y=[heights[i]],
+                mode="markers+text",
+                marker=dict(symbol="triangle-down", size=10, color="#0284c7"),
+                text=["Bajamar"],
+                textposition="bottom center",
+                textfont=dict(size=10, color="#0369a1"),
+                showlegend=False,
+                hoverinfo="skip",
+            ))
+
+    # Selected time vertical line
+    if selected_time:
+        sel_iso = selected_time.isoformat() if hasattr(selected_time, "isoformat") else str(selected_time)
+        fig.add_shape(
+            type="line",
+            x0=sel_iso,
+            x1=sel_iso,
+            y0=0,
+            y1=1,
+            yref="paper",
+            line=dict(color="#dc2626", width=2, dash="dash"),
+        )
+        fig.add_annotation(
+            x=sel_iso,
+            y=1.04,
+            yref="paper",
+            text="<b>📍 AHORA</b>",
+            showarrow=False,
+            font=dict(size=10, color="#dc2626"),
+            bgcolor="rgba(254, 226, 226, 0.9)",
+            bordercolor="#dc2626",
+            borderwidth=1,
+        )
+
+    max_h = max(heights) if heights else 3.5
+    fig.update_layout(
+        title=dict(
+            text="<b>🌊 Curva Continua de Marea (Onda de Pleamar / Bajamar y Repuntes)</b>",
+            font=dict(size=13, color="#0f172a"),
+        ),
+        xaxis=dict(
+            title="",
+            showgrid=True,
+            gridcolor="#f1f5f9",
+            tickformat="%d/%m %H:00",
+        ),
+        yaxis=dict(
+            title="Altura (m)",
+            range=[0.0, max(3.2, max_h + 0.5)],
+            showgrid=True,
+            gridcolor="#f1f5f9",
+        ),
+        height=height,
+        margin=dict(l=20, r=20, t=40, b=30),
+        plot_bgcolor="#ffffff",
+        paper_bgcolor="#ffffff",
+    )
+
+    return fig
