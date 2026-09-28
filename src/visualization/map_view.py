@@ -496,16 +496,6 @@ def create_andalucia_fishing_map(
     ).add_to(m)
 
     folium.TileLayer(
-        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
-        name="🗺️ Esri Topográfico Claro",
-        attr="Esri, USGS, Garmin",
-        max_zoom=19,
-        max_native_zoom=19,
-        control=True,
-        show=False,
-    ).add_to(m)
-
-    folium.TileLayer(
         tiles="OpenStreetMap",
         name="🌍 OpenStreetMap (Calles y Accesos)",
         max_zoom=19,
@@ -530,11 +520,11 @@ def create_andalucia_fishing_map(
     fg_spots = folium.FeatureGroup(name="📍 Spots de Pesca", show=True)
     fg_hotspots = folium.FeatureGroup(name="⛰️ Hotspots Topográficos (Cantiles y Bajos)", show=highlight_hotspots)
     fg_pozas = folium.FeatureGroup(name="🌊 Pozas y Canales Detectados (Satélite)", show=show_pozas)
-    fg_coastline = folium.FeatureGroup(name="🏖️ Línea de Costa Satelital (Pleamar MHW)", show=show_coastline)
+    fg_coastline = folium.FeatureGroup(name="🏖️ Línea de Costa Oficial (OpenStreetMap)", show=show_coastline)
     fg_rivers = folium.FeatureGroup(name="🏞️ Desembocaduras y Plumas Fluviales", show=True)
     fg_buoys = folium.FeatureGroup(name="⚓ Boyas Oceanográficas (REDEXT)", show=True)
 
-    # Render Coastline PolyLine (MHW boundary separating land and ocean surf zone)
+    # Render Coastline PolyLine (Official OpenStreetMap MHW boundary separating land and ocean surf zone)
     coastline_coords = get_huelva_shoreline_folium_coords()
     folium.PolyLine(
         locations=coastline_coords,
@@ -542,7 +532,7 @@ def create_andalucia_fishing_map(
         weight=3.5,
         opacity=0.85,
         dash_array="6, 6",
-        tooltip="🏖️ Línea de Costa Satelital Pleamar MHW (Ayamonte a Matalascañas)",
+        tooltip="🏖️ Línea de Costa Oficial OpenStreetMap (Ayamonte a Doñana)",
     ).add_to(fg_coastline)
 
     # Add standard spots

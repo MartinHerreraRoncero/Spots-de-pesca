@@ -17,10 +17,10 @@ def test_map_base_layers_and_layer_control():
 
     html = m.get_root().render()
 
-    # 1. Check all base layers are registered in base_layers
+    # 1. Check all base layers are registered in base_layers (Esri Topo removed)
     assert "base_layers" in html
     assert "World Imagery" in html
-    assert "Esri Topogr" in html
+    assert "Esri Topogr" not in html
     assert "OpenStreetMap" in html
     assert "PNOA" in html
 
@@ -44,6 +44,11 @@ def test_map_base_layers_and_layer_control():
     assert "Spots Excelentes" not in html
     assert "Spots Favorables" not in html
     assert "Spots Desfavorables" not in html
+
+    # 5. Check high-definition OpenStreetMap coastline vector
+    from src.analytics.coastline import get_huelva_shoreline_folium_coords
+    osm_coords = get_huelva_shoreline_folium_coords()
+    assert len(osm_coords) >= 900, f"Expected >= 900 OSM coastline points, got {len(osm_coords)}"
 
 def test_app_and_methodology_file():
     # 1. METODOLOGIA_Y_FUNDAMENTOS.md exists and is populated

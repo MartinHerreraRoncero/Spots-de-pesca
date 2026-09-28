@@ -296,9 +296,31 @@ def enforce_marine_bounds(
         return DetectedPoza.from_dict(d)
 
 
+_CACHED_OSM_SHORELINE: Optional[List[Tuple[float, float]]] = None
+
+
 def get_huelva_shoreline_folium_coords() -> List[Tuple[float, float]]:
     """
     Returns list of (latitude, longitude) tuples representing the Huelva shoreline,
     directly formatted for rendering as a Folium PolyLine layer.
+    Loads the official, high-resolution OpenStreetMap coastline vector (932 points from Ayamonte to Doñana).
     """
+    global _CACHED_OSM_SHORELINE
+    if _CACHED_OSM_SHORELINE is not None:
+        return _CACHED_OSM_SHORELINE
+
+    import json
+    from pathlib import Path
+    data_file = Path(__file__).resolve().parent.parent.parent / "data" / "osm_huelva_coastline.json"
+    if data_file.exists():
+        try:
+            with open(data_file, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            pts = d.get("coordinates_lat_lon", [])
+            if pts:
+                _CACHED_OSM_SHORELINE = [(float(p[0]), float(p[1])) for p in pts]
+                return _CACHED_OSM_SHORELINE
+        except Exception:
+            pass
+
     return [(lat, lon) for lon, lat in HUELVA_SHORELINE_VERTICES]
