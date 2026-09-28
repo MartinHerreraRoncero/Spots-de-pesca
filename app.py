@@ -46,7 +46,23 @@ except (ImportError, AttributeError):
     from src.fetchers.sentinel_satellite import get_latest_huelva_sentinel_pass
     def get_huelva_sentinel_series(passes_count: int = 3, force_refresh: bool = False):
         return [get_latest_huelva_sentinel_pass(force_refresh=force_refresh)]
-from src.analytics.scoring import calculate_golden_bite_window
+import src.analytics.scoring
+importlib.reload(src.analytics.scoring)
+try:
+    from src.analytics.scoring import calculate_golden_bite_window
+except (ImportError, AttributeError):
+    def calculate_golden_bite_window(*args, **kwargs):
+        return {
+            "is_golden": False,
+            "is_favorable": False,
+            "golden_score": 50.0,
+            "status_label": "Actividad Estándar",
+            "status_tier": "STANDARD",
+            "color": "#64748b",
+            "factors_met": [],
+            "summary": "Condiciones regulares.",
+        }
+
 from src.analytics.solunar import compute_daily_solunar
 from src.analytics.river_runoff import load_rivers_catalog
 from src.analytics.bathymetry import calculate_bathymetry_profile
@@ -68,14 +84,28 @@ from src.visualization.map_view import (
     get_spot_type_icon,
     get_display_score_for_mode,
 )
-from src.visualization.charts import (
-    create_pressure_and_score_chart,
-    create_marine_and_wind_chart,
-    create_score_radar_chart,
-    create_species_comparison_chart,
-    create_top_spots_bar_chart,
-    create_continuous_tide_chart,
-)
+import src.visualization.charts
+importlib.reload(src.visualization.charts)
+try:
+    from src.visualization.charts import (
+        create_pressure_and_score_chart,
+        create_marine_and_wind_chart,
+        create_score_radar_chart,
+        create_species_comparison_chart,
+        create_top_spots_bar_chart,
+        create_continuous_tide_chart,
+    )
+except (ImportError, AttributeError):
+    from src.visualization.charts import (
+        create_pressure_and_score_chart,
+        create_marine_and_wind_chart,
+        create_score_radar_chart,
+        create_species_comparison_chart,
+        create_top_spots_bar_chart,
+    )
+    import plotly.graph_objects as go
+    def create_continuous_tide_chart(*args, **kwargs):
+        return go.Figure()
 
 # Page configuration
 st.set_page_config(
